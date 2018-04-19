@@ -3,7 +3,7 @@ var org = org || {};
 org.klesun = org.klesun || {};
 org.klesun.RanamTest = function(form){
     "use strict";
-    let $$ = (s) => Array.from(document.querySelectorAll(s));
+    let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
 
     // http://stackoverflow.com/a/21797381/2750743
     let _base64ToArrayBuffer = function(base64)
@@ -79,11 +79,48 @@ org.klesun.RanamTest = function(form){
         });
     };
 
-    let smfReaderToBuff = function(smfReader)
+    let makeOadEvents = function(channel) {
+        return [
+            new Midi.Event({
+                type: Midi.Event.CONTROLLER,
+                channel: channel,
+                param1: 0, // bank select
+                param2: 121,
+                time: 0,
+            }),
+            new Midi.Event({
+                type: Midi.Event.CONTROLLER,
+                channel: channel,
+                param1: 32, // bank select 2
+                param2: 0,
+                time: 0,
+            }),
+            new Midi.Event({
+                type: Midi.Event.PROGRAM_CHANGE,
+                channel: channel,
+                param1: 123, // bird tweet
+                time: 0,
+            }),
+        ];
+    };
+
+    let smfReaderToBuff = function(smfReader, formParams)
     {
+        /** @debug */
+        console.log(formParams);
+
         let jsmidgenTracks = [];
-        for (let readerTrack of smfReader.tracks) {
+        for (let i = 0; i < smfReader.tracks.length; ++i) {
+            let readerTrack = smfReader.tracks[i];
             let jsmidgenTrack = new Midi.Track();
+
+            if (i == formParams.oudTrackNum) {
+                // add control change event and program change 123, bird tweet
+                makeOadEvents(formParams.oudChanNum)
+                    .forEach(e => jsmidgenTrack.addEvent(e));
+            } else if (i == formParams.arabicDrumTrackNum) {
+                // add control change event for drums... what was it again?
+            }
 
             // add quarter-tone pitch-bend to every track for test
             for (let i = 0; i < 16; ++i) {
@@ -115,26 +152,57 @@ org.klesun.RanamTest = function(form){
         return buf;
     };
 
+    let collectParams = (gui) => 1 && {
+        scale: gui.scaleInput.value,
+        regions: $$(':scope > *', gui.regionListCont)
+            .map(div => 1 && {
+                from: $$('input.from', div)[0].value,
+                to: $$('input.to', div)[0].value,
+            }),
+        oudTrackNum: gui.oudTrackNumInput.value,
+        oudChanNum: gui.oudChanNumInput.value,
+        arabicDrumTrackNum: gui.arabicDrumTrackNumInput.value,
+    };
+
+    let gui = {
+        smfInput: $$('input[type="file"].midi-file', form)[0],
+        scaleInput: $$('input.scale', form)[0],
+        regionListCont: $$('.region-list', form)[0],
+        currentTracks: $$('tbody.current-tracks', form)[0],
+        addAnotherRegionBtn: $$('button.add-another-region', form)[0],
+        oudTrackNumInput: $$('input.oud-track-num', form)[0],
+        oudChanNumInput: $$('input.oud-chan-num', form)[0],
+        arabicDrumTrackNumInput: $$('input.arabic-drum-track-num', form)[0],
+        convertBtn: $$('button.convert-to-arabic', form)[0],
+    };
+
     let main = function (){
-        let gui = {
-            smfInput: $$('input[type="file"].midi-file', form)[0],
-            convertBtn: $$('button.convert-to-arabic', form)[0],
-        };
         let currentSmf = null;
         gui.smfInput.onchange =
             (inputEvent) => loadSelectedFile(gui.smfInput.files[0],
             (smfBase64) => {
                 let smfBuf = _base64ToArrayBuffer(smfBase64);
                 let smf = Ns.Libs.SMFreader(smfBuf);
-                for (let track of smf.tracks) {
+                gui.currentTracks.innerHTML = '';
+                for (let i = 0; i < smf.tracks.length; ++i) {
+                    let track = smf.tracks[i];
+                    gui.currentTracks.innerHTML += '<tr>' +
+                        '<td>' + i + '</td>' +
+                        '<td>' + (track.trackName || '') + '</td>' +
+                        '<td>' + track.events.length + '</td>' +
+                    '</tr>';
                     console.log('Parsed SMF track ', track);
                 }
                 currentSmf = smf;
                 gui.convertBtn.removeAttribute('disabled');
             });
         gui.convertBtn.onclick = () => {
-            let buff = smfReaderToBuff(currentSmf);
+            let buff = smfReaderToBuff(currentSmf, collectParams(gui));
             saveMidiToDisc(buff);
+        };
+        gui.addAnotherRegionBtn.onclick = () => {
+            let last = $$(':scope > *', gui.regionListCont).slice(-1)[0];
+            gui.regionListCont.appendChild(last.cloneNode(true));
         };
     };
 

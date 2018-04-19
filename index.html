@@ -15,17 +15,29 @@
 
 <form id="midi-file-params">
     <label>MIDI file: <input type="file" class="midi-file"/></label><br/>
-    <label>Scale: <input type="number" value="0" min="-7" max="7" step="1"/></label><br/>
+    <label>Current MIDI File:</label>
+    <table>
+        <thead>
+            <tr>
+                <th>Track</th>
+                <th>Name</th>
+                <th>Events</th>
+            </tr>
+        </thead>
+        <tbody class="current-tracks"></tbody>
+    </table>
+    <label>Scale: <input type="number" class="scale" value="0" min="-7" max="7" step="1"/></label><br/>
     <label>Regions:</label><br/>
-    <div style="padding: 8px;">
+    <div style="padding: 8px;" class="region-list">
         <div>
-            <label>From: <input type="number" value="0" step="1" min="0"/></label>
-            <label>To: <input type="number" value="0" step="1" min="0"/></label>
+            <label>From: <input type="number" value="0" step="1" min="0" class="from"/></label>
+            <label>To: <input type="number" value="0" step="1" min="0" class="to"/></label>
         </div>
     </div>
-    <button type="button">Add another region</button><br/>
-    <label>Oud Track: <input type="number" value="1" min="0" max="15" step="1"/></label><br/>
-    <label>Arabic Drum Track: <input type="number" value="2" min="0" max="15" step="1"/></label><br/>
+    <button type="button" class="add-another-region">Add another region</button><br/>
+    <label>Oud Track: <input type="number" value="1" min="0" max="15" step="1" class="oud-track-num"/></label><br/>
+    <label>Oud Channel: <input type="number" value="0" min="0" max="15" step="1" class="oud-chan-num"/></label><br/>
+    <label>Arabic Drum Track: <input type="number" value="2" min="0" max="15" step="1" class="arabic-drum-track-num"/></label><br/>
     <button type="button" disabled="disabled" title="Upload General MIDI first!" class="convert-to-arabic">Convert to Arabic MIDI</button>
 </form>
 
@@ -35,6 +47,18 @@
     org.klesun.RanamTest(form);
 })();
 </script>
+
+<style>
+    table {
+        margin: 12px;
+        border-collapse: collapse;
+    }
+    td, th {
+        border: 1px solid black;
+        padding-left: 4px;
+        padding-right: 4px;
+    }
+</style>
 
 </body>
 </html>
