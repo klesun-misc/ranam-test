@@ -115,23 +115,90 @@ org.klesun.RanamTest = function(form){
         ];
     };
 
-    let getOudPitchBend = function(semitone, scale)
+    let scaleMapping = {
+        Bayati: {
+            Do: {noteName: 'Re' , pitchBend: -0.25}, // Re ½b
+            Re: {noteName: 'Mi' , pitchBend: -0.25}, // Mi ½b
+            Mi: {noteName: 'Fa#', pitchBend: -0.25}, // Fa ½#
+            Fa: {noteName: 'So' , pitchBend: -0.25}, // So ½b
+            So: {noteName: 'La' , pitchBend: -0.25}, // La ½b
+            La: {noteName: 'Si' , pitchBend: -0.25}, // Si ½b
+            Si: {noteName: 'Do#', pitchBend: -0.25}, // Do ½#
+        },
+        Saba: {
+            Do: {noteName: 'Re' , pitchBend: -0.25}, // Re ½b
+            Re: {noteName: 'Mi' , pitchBend: -0.25}, // Mi ½b
+            Mi: {noteName: 'Fa#', pitchBend: -0.25}, // Fa ½#
+            Fa: {noteName: 'So' , pitchBend: -0.25}, // So ½b
+            So: {noteName: 'La' , pitchBend: -0.25}, // La ½b
+            La: {noteName: 'Si' , pitchBend: -0.25}, // Si ½b
+            Si: {noteName: 'Do#', pitchBend: -0.25}, // Do ½#
+        },
+        Sikah: {
+            Do: {noteName: 'Do', pitchBend: -0.25}, // Do ½b
+            Re: {noteName: 'Re', pitchBend: -0.25}, // Re ½b
+            Mi: {noteName: 'Mi', pitchBend: -0.25}, // Mi ½b
+            Fa: {noteName: 'Fa', pitchBend: -0.25}, // Fa ½b
+            So: {noteName: 'So', pitchBend: -0.25}, // So ½b
+            La: {noteName: 'La', pitchBend: -0.25}, // La ½b
+            Si: {noteName: 'Si', pitchBend: -0.25}, // Si ½b
+        },
+        Rast: {
+            Do: {noteName: 'Mi' , pitchBend: -0.25}, // Mi ½b
+            Re: {noteName: 'Fa#', pitchBend: -0.25}, // Fa ½#
+            Mi: {noteName: 'So#', pitchBend: -0.25}, // So ½#
+            Fa: {noteName: 'La' , pitchBend: -0.25}, // La ½b
+            So: {noteName: 'Si' , pitchBend: -0.25}, // Si ½b
+            La: {noteName: 'Do#', pitchBend: -0.25}, // Do ½#
+            Si: {noteName: 'Re#', pitchBend: -0.25}, // Re ½#
+        },
+        // no pitch bend in the following
+        Hijaz: {
+        },
+        Nahawand: {
+        },
+        Kurd: {
+        },
+        Ajam: {
+        },
+    };
+
+    let matchesNoteName = function(semitone, name)
     {
-        if (['Bayati', 'Saba', 'Sikah', 'Rast'].includes(scale)) {
-            let isDoReMiFaSoLaTi = true;
-            if (isDoReMiFaSoLaTi) {
-                // -2048, half a step below a note if range is default (+-2 semitones)
-                return -0.25;
-            } else {
-                return 0;
+        let clean = name.slice(0, 2);
+        let sign = name.slice(2);
+        let ivory = {'Do': 0,'Re': 2,'Mi':4,'Fa': 5,'So': 7,'La':9,'Si': 11}[clean];
+        let offset = {
+            '#': +1,
+            'b': -1,
+            '': 0,
+        }[sign];
+        return semitone % 12 == ivory + offset;
+    };
+
+    let getOudPitchBend = function(semitone, scales)
+    {
+        for (let scaleData of scales) {
+            let scale = scales ? scaleData.scale : null;
+            let startingNote = scales ? scaleData.startingNote : null;
+            let keyNotes = scaleMapping[scale];
+            if (!keyNotes) {
+                // unknown Scale name
+                continue;
             }
-        } else if (['Hijaz', 'Nahawand', 'Kurd', 'Ajam'].includes(scale)) {
-            // no pitch bend
-            return 0;
-        } else {
-            // unknown;
-            return 0;
+            let pitchInfo = keyNotes[startingNote];
+            if (!pitchInfo) {
+                // if note outside the scale was played
+                continue;
+            }
+            if (matchesNoteName(semitone, pitchInfo.noteName)) {
+                return pitchInfo.pitchBend;
+            } else {
+                // not the bended note
+                continue;
+            }
         }
+        return 0;
     };
 
     let smfReaderToBuff = function(smfReader, formParams)
@@ -158,15 +225,14 @@ org.klesun.RanamTest = function(form){
 
             for (let readerEvent of readerTrack.events) {
                 timeTicks += readerEvent.delta;
-                let scaleRegion = scaleRegions.filter(s => s.from <= timeTicks && s.to > timeTicks)[0];
-                let scale = scaleRegion ? scaleRegion.scale : 'Unset';
+                let scales = scaleRegions.filter(s => s.from <= timeTicks && s.to > timeTicks);
                 let jsmidgenEvent = readerToJsmidgenEvent(readerEvent);
                 let isNoteEvent = readerEvent.type === 'MIDI' &&
                     [8,9].includes(readerEvent.midiEventType);
                 let isNoteOn = readerEvent.midiEventType == 9 && readerEvent.parameter2 > 0;
                 if (isOudTrack && isNoteOn) {
                     // Oud NOTE ON is about to fire - should set pitch bend
-                    let koef = getOudPitchBend(readerEvent.parameter1, scale);
+                    let koef = getOudPitchBend(readerEvent.parameter1, scales);
                     jsmidgenTrack.addEvent(makePitchBend(koef, readerEvent.midiChannel));
                 }
                 if (jsmidgenEvent) {
@@ -198,6 +264,7 @@ org.klesun.RanamTest = function(form){
         scaleRegions: $$(':scope > *', gui.regionListCont)
             .map(div => 1 && {
                 scale: $$('select.scale', div)[0].value,
+                startingNote: $$('select.starting-note', div)[0].value,
                 from: $$('input.from', div)[0].value,
                 to: $$('input.to', div)[0].value,
             }),
