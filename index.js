@@ -352,6 +352,7 @@ org.klesun.RanamTest = function(form){
         let onchange = () => updateScaleInfo(div);
         $$('select.scale', div)[0].onchange = onchange;
         $$('select.key-note', div)[0].onchange = onchange;
+        $$('button.remove-region', div)[0].onclick = () => div.remove();
         onchange();
     };
 
@@ -394,10 +395,11 @@ org.klesun.RanamTest = function(form){
                 saveMidiToDisc(buff);
             }
         };
+        let regionRef = $$(':scope > *', gui.regionListCont)
+            .slice(-1)[0].cloneNode(true);
         hangScaleHandlers($$(':scope > *', gui.regionListCont)[0]);
         gui.addAnotherRegionBtn.onclick = () => {
-            let last = $$(':scope > *', gui.regionListCont).slice(-1)[0];
-            let cloned = last.cloneNode(true);
+            let cloned = regionRef.cloneNode(true);
             hangScaleHandlers(cloned);
             gui.regionListCont.appendChild(cloned);
         };
