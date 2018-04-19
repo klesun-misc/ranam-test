@@ -173,7 +173,7 @@ org.klesun.RanamTest = function(form){
             'b': -1,
             '': 0,
         }[sign];
-        return semitone % 12 == ivory + offset;
+        return (semitone % 12) == (ivory + offset);
     };
 
     let getOudPitchBend = function(semitone, scales)
@@ -198,7 +198,7 @@ org.klesun.RanamTest = function(form){
                 continue;
             }
         }
-        return 0;
+        return null;
     };
 
     let smfReaderToBuff = function(smfReader, formParams)
@@ -208,6 +208,8 @@ org.klesun.RanamTest = function(form){
 
         let jsmidgenTracks = [];
         for (let i = 0; i < smfReader.tracks.length; ++i) {
+            let noteToPitchBend = new Set();
+
             let readerTrack = smfReader.tracks[i];
             let jsmidgenTrack = new Midi.Track();
 
@@ -232,15 +234,23 @@ org.klesun.RanamTest = function(form){
                 let isNoteOn = readerEvent.midiEventType == 9 && readerEvent.parameter2 > 0;
                 if (isOudTrack && isNoteOn) {
                     // Oud NOTE ON is about to fire - should set pitch bend
-                    let koef = getOudPitchBend(readerEvent.parameter1, scales);
-                    jsmidgenTrack.addEvent(makePitchBend(koef, readerEvent.midiChannel));
+                    let semitones = readerEvent.parameter1;
+                    let koef = getOudPitchBend(semitones, scales);
+                    if (koef) {
+                        jsmidgenTrack.addEvent(makePitchBend(koef, readerEvent.midiChannel));
+                        noteToPitchBend.add(semitones);
+                    }
                 }
                 if (jsmidgenEvent) {
                     jsmidgenTrack.addEvent(jsmidgenEvent);
                 }
                 if (isOudTrack && isNoteEvent && !isNoteOn) {
                     // Oud NOTE OFF just fired, should reset pitch bend
-                    jsmidgenTrack.addEvent(makePitchBend(0, readerEvent.midiChannel));
+                    let semitones = readerEvent.parameter1;
+                    if (noteToPitchBend.has(semitones)) {
+                        jsmidgenTrack.addEvent(makePitchBend(0, readerEvent.midiChannel));
+                        noteToPitchBend.delete(semitones);
+                    }
                 }
             }
             jsmidgenTracks.push(jsmidgenTrack);
@@ -264,7 +274,7 @@ org.klesun.RanamTest = function(form){
         scaleRegions: $$(':scope > *', gui.regionListCont)
             .map(div => 1 && {
                 scale: $$('select.scale', div)[0].value,
-                startingNote: $$('select.starting-note', div)[0].value,
+                startingNote: $$('select.key-note', div)[0].value,
                 from: $$('input.from', div)[0].value,
                 to: $$('input.to', div)[0].value,
             }),
@@ -354,6 +364,8 @@ org.klesun.RanamTest = function(form){
                 alert('Invalid MIDI file: ' + error);
             } else {
                 let buff = smfReaderToBuff(currentSmf, params);
+                /** @debug */
+                console.log('Converted SMF', Ns.Libs.SMFreader(buff).tracks);
                 saveMidiToDisc(buff);
             }
         };

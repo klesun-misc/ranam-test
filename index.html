@@ -10,7 +10,7 @@
 </head>
 <body>
 
-<p>This is a test page that converts General MIDI file to an Arabic MIDI file with Oud and Arabic Drum</p>
+<p>This is a test page that converts General MIDI file to a Ranam-format MIDI file with Oud and Tabla</p>
 <p>It adds a quarter-tone pitch-bend on some regions defined by user. The note that gets pitch-bended depends on Scale</p>
 
 <form id="midi-file-params">
@@ -44,7 +44,7 @@
                     <option>Kurd</option>
                     <option>Ajam</option>
                 </select></label>
-                <label>Starting Note: <select class="starting-note">
+                <label>Key Note: <select class="key-note">
                     <option value="Do">C (Do)</option> <!-- 0 -->
                     <option value="Re">D (Re)</option> <!-- 1 -->
                     <option value="Mi">E (Mi)</option> <!-- 2 -->
@@ -53,8 +53,9 @@
                     <option value="La">A (La)</option> <!-- 5 -->
                     <option value="Si">B (Si)</option> <!-- 6 -->
                 </select></label>
-                <label>From (Inclusive): <input type="number" value="0" step="1" min="0" class="from"/></label>
-                <label>To (Exclusive): <input type="number" value="0" step="1" min="0" class="to"/></label>
+                <label>Affects: <span>?# => ?½#</span></label>
+                <label>From (Inclusive): <input type="number" value="0" step="384" min="0" max="38400" class="from"/></label>
+                <label>To (Exclusive): <input type="number" value="0" step="384" min="0" max="38400" class="to"/></label>
             </div>
         </div>
         <button type="button" class="add-another-region">Add another region</button><br/>
@@ -62,7 +63,7 @@
     <label>Oud Track: <input type="number" value="1" min="0" max="15" step="1" class="oud-track-num"/></label><br/>
     <label>Oud Channel: <input type="number" value="0" min="0" max="15" step="1" class="oud-chan-num"/></label><br/>
     <label>Tabla Track: <input type="number" value="2" min="0" max="15" step="1" class="tabla-track-num"/></label><br/>
-    <button type="button" disabled="disabled" title="Upload General MIDI first!" class="convert-to-arabic">Convert to Arabic MIDI</button>
+    <button type="button" disabled="disabled" title="Upload General MIDI first!" class="convert-to-arabic">Convert to Ranam-format MIDI</button>
 </form>
 
 <script>
@@ -73,6 +74,15 @@
 </script>
 
 <style>
+    .region-list > * {
+        margin-bottom: 3px;
+        background-color: #EEEEEE;
+    }
+    .region-list label {
+        background-color: #DDDDDD;
+        padding-right: 4px;
+        padding-left: 4px;
+    }
     table {
         margin: 12px;
         border-collapse: collapse;
