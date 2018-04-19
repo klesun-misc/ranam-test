@@ -138,7 +138,7 @@ org.klesun.RanamTest = function(form){
             jsmidgenTracks.push(jsmidgenTrack);
         }
         let jsmidgenSmf = new Midi.File({
-            ticks: smfReader.ticksPerBeat,
+            ticks: smfReader.ticksPerBeatticksPerBeat,
             tracks: jsmidgenTracks,
         });
 
@@ -153,9 +153,9 @@ org.klesun.RanamTest = function(form){
     };
 
     let collectParams = (gui) => 1 && {
-        scale: gui.scaleInput.value,
         regions: $$(':scope > *', gui.regionListCont)
             .map(div => 1 && {
+                scale: $$('select.scale', div)[0].value,
                 from: $$('input.from', div)[0].value,
                 to: $$('input.to', div)[0].value,
             }),
@@ -166,7 +166,7 @@ org.klesun.RanamTest = function(form){
 
     let gui = {
         smfInput: $$('input[type="file"].midi-file', form)[0],
-        scaleInput: $$('input.scale', form)[0],
+        ticksPerBeatHolder: $$('.ticks-per-beat', form)[0],
         regionListCont: $$('.region-list', form)[0],
         currentTracks: $$('tbody.current-tracks', form)[0],
         addAnotherRegionBtn: $$('button.add-another-region', form)[0],
@@ -174,6 +174,12 @@ org.klesun.RanamTest = function(form){
         oudChanNumInput: $$('input.oud-chan-num', form)[0],
         arabicDrumTrackNumInput: $$('input.arabic-drum-track-num', form)[0],
         convertBtn: $$('button.convert-to-arabic', form)[0],
+    };
+
+    let getTotalTicks = function(smfReader)
+    {
+        let ticksPerTrack = smfReader.tracks.map(t => t.events.reduce((sum, e) => sum + e.delta, 0));
+        return Math.max(...ticksPerTrack);
     };
 
     let main = function (){
@@ -193,6 +199,14 @@ org.klesun.RanamTest = function(form){
                     '</tr>';
                     console.log('Parsed SMF track ', track);
                 }
+                let totalTicks = getTotalTicks(smf);
+                gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
+                $$(':scope > div input.to', gui.regionListCont)
+                    .forEach(inp => {
+                        inp.setAttribute('step', smf.ticksPerBeat);
+                        inp.value = totalTicks;
+                    });
+
                 currentSmf = smf;
                 gui.convertBtn.removeAttribute('disabled');
             });

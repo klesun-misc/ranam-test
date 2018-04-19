@@ -15,26 +15,41 @@
 
 <form id="midi-file-params">
     <label>MIDI file: <input type="file" class="midi-file"/></label><br/>
-    <label>Current MIDI File:</label>
-    <table>
-        <thead>
-            <tr>
-                <th>Track</th>
-                <th>Name</th>
-                <th>Events</th>
-            </tr>
-        </thead>
-        <tbody class="current-tracks"></tbody>
-    </table>
-    <label>Scale: <input type="number" class="scale" value="0" min="-7" max="7" step="1"/></label><br/>
-    <label>Regions:</label><br/>
-    <div style="padding: 8px;" class="region-list">
-        <div>
-            <label>From: <input type="number" value="0" step="1" min="0" class="from"/></label>
-            <label>To: <input type="number" value="0" step="1" min="0" class="to"/></label>
-        </div>
+    <div style="margin: 8px;">
+        <label>Current MIDI File:</label><br/>
+        <label>♩ = <span class="ticks-per-beat">?</span> ticks</label><br/>
+        <table>
+            <thead>
+                <tr>
+                    <th>Track</th>
+                    <th>Name</th>
+                    <th>Events</th>
+                </tr>
+            </thead>
+            <tbody class="current-tracks"></tbody>
+        </table>
     </div>
-    <button type="button" class="add-another-region">Add another region</button><br/>
+    <label>Scale Regions:</label><br/>
+    <div style="padding: 8px;">
+        <div style="padding: 8px;" class="region-list">
+            <div>
+                <!--<input type="number" class="scale" value="0" min="-7" max="7" step="1"/>-->
+                <label>Scale: <select class="scale">
+                    <option>Bayati</option>
+                    <option>Saba</option>
+                    <option>Sikah</option>
+                    <option>Rast</option>
+                    <option>Hijaz</option>
+                    <option>Nahawand</option>
+                    <option>Kurd</option>
+                    <option>Ajam</option>
+                </select></label>
+                <label>From: <input type="number" value="0" step="1" min="0" class="from"/></label>
+                <label>To: <input type="number" value="0" step="1" min="0" class="to"/></label>
+            </div>
+        </div>
+        <button type="button" class="add-another-region">Add another region</button><br/>
+    </div>
     <label>Oud Track: <input type="number" value="1" min="0" max="15" step="1" class="oud-track-num"/></label><br/>
     <label>Oud Channel: <input type="number" value="0" min="0" max="15" step="1" class="oud-chan-num"/></label><br/>
     <label>Arabic Drum Track: <input type="number" value="2" min="0" max="15" step="1" class="arabic-drum-track-num"/></label><br/>
