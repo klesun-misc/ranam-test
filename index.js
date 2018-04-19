@@ -44,16 +44,22 @@ org.klesun.RanamTest = function(form){
         saveAs(blob, 'ranam_song.mid', true);
     };
 
-    let readerToJsmidgenEvent = function(readerEvent)
+    let readerToJsmidgenEvent = function(readerEvent, isOudTrack)
     {
         if (readerEvent.type === 'MIDI') {
-            return new Midi.Event({
-                type: readerEvent.midiEventType * 16,
-                channel: readerEvent.midiChannel,
-                param1: readerEvent.parameter1,
-                param2: readerEvent.parameter2,
-                time: readerEvent.delta,
-            })
+            if (isOudTrack && readerEvent.midiEventType == 14) {
+                // Pitch Bend - we don't want pitch bends from
+                // original song to mess up our pitch bends
+                return null;
+            } else {
+                return new Midi.Event({
+                    type: readerEvent.midiEventType * 16,
+                    channel: readerEvent.midiChannel,
+                    param1: readerEvent.parameter1,
+                    param2: readerEvent.parameter2,
+                    time: readerEvent.delta,
+                })
+            }
         } else if (readerEvent.type === 'meta') {
             if (readerEvent.metaType == 47) {
                 // End Of Track message, will be added automatically by
@@ -219,7 +225,7 @@ org.klesun.RanamTest = function(form){
             for (let readerEvent of readerTrack.events) {
                 timeTicks += readerEvent.delta;
                 let scales = scaleRegions.filter(s => s.from <= timeTicks && s.to > timeTicks);
-                let jsmidgenEvent = readerToJsmidgenEvent(readerEvent);
+                let jsmidgenEvent = readerToJsmidgenEvent(readerEvent, isOudTrack);
                 let isNoteEvent = readerEvent.type === 'MIDI' &&
                     [8,9].includes(readerEvent.midiEventType);
                 let isNoteOn = readerEvent.midiEventType == 9 && readerEvent.parameter2 > 0;
