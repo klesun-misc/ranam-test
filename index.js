@@ -117,40 +117,40 @@ org.klesun.RanamTest = function(form){
 
     let scaleMapping = {
         Bayati: {
-            Do: {noteName: 'Re' , pitchBend: -0.25}, // Re ½b
-            Re: {noteName: 'Mi' , pitchBend: -0.25}, // Mi ½b
-            Mi: {noteName: 'Fa#', pitchBend: -0.25}, // Fa ½#
-            Fa: {noteName: 'So' , pitchBend: -0.25}, // So ½b
-            So: {noteName: 'La' , pitchBend: -0.25}, // La ½b
-            La: {noteName: 'Si' , pitchBend: -0.25}, // Si ½b
-            Si: {noteName: 'Do#', pitchBend: -0.25}, // Do ½#
+            Do: [{noteName: 'Re' , pitchBend: -0.25, pitched: 'Re ½b'}],
+            Re: [{noteName: 'Mi' , pitchBend: -0.25, pitched: 'Mi ½b'}],
+            Mi: [{noteName: 'Fa#', pitchBend: -0.25, pitched: 'Fa ½#'}],
+            Fa: [{noteName: 'So' , pitchBend: -0.25, pitched: 'So ½b'}],
+            So: [{noteName: 'La' , pitchBend: -0.25, pitched: 'La ½b'}],
+            La: [{noteName: 'Si' , pitchBend: -0.25, pitched: 'Si ½b'}],
+            Si: [{noteName: 'Do#', pitchBend: -0.25, pitched: 'Do ½#'}],
         },
         Saba: {
-            Do: {noteName: 'Re' , pitchBend: -0.25}, // Re ½b
-            Re: {noteName: 'Mi' , pitchBend: -0.25}, // Mi ½b
-            Mi: {noteName: 'Fa#', pitchBend: -0.25}, // Fa ½#
-            Fa: {noteName: 'So' , pitchBend: -0.25}, // So ½b
-            So: {noteName: 'La' , pitchBend: -0.25}, // La ½b
-            La: {noteName: 'Si' , pitchBend: -0.25}, // Si ½b
-            Si: {noteName: 'Do#', pitchBend: -0.25}, // Do ½#
+            Do: [{noteName: 'Re' , pitchBend: -0.25, pitched: 'Re ½b'}],
+            Re: [{noteName: 'Mi' , pitchBend: -0.25, pitched: 'Mi ½b'}],
+            Mi: [{noteName: 'Fa#', pitchBend: -0.25, pitched: 'Fa ½#'}],
+            Fa: [{noteName: 'So' , pitchBend: -0.25, pitched: 'So ½b'}],
+            So: [{noteName: 'La' , pitchBend: -0.25, pitched: 'La ½b'}],
+            La: [{noteName: 'Si' , pitchBend: -0.25, pitched: 'Si ½b'}],
+            Si: [{noteName: 'Do#', pitchBend: -0.25, pitched: 'Do ½#'}],
         },
         Sikah: {
-            Do: {noteName: 'Do', pitchBend: -0.25}, // Do ½b
-            Re: {noteName: 'Re', pitchBend: -0.25}, // Re ½b
-            Mi: {noteName: 'Mi', pitchBend: -0.25}, // Mi ½b
-            Fa: {noteName: 'Fa', pitchBend: -0.25}, // Fa ½b
-            So: {noteName: 'So', pitchBend: -0.25}, // So ½b
-            La: {noteName: 'La', pitchBend: -0.25}, // La ½b
-            Si: {noteName: 'Si', pitchBend: -0.25}, // Si ½b
+            Do: [{noteName: 'Do', pitchBend: -0.25, pitched: 'Do ½b'}],
+            Re: [{noteName: 'Re', pitchBend: -0.25, pitched: 'Re ½b'}],
+            Mi: [{noteName: 'Mi', pitchBend: -0.25, pitched: 'Mi ½b'}],
+            Fa: [{noteName: 'Fa', pitchBend: -0.25, pitched: 'Fa ½b'}],
+            So: [{noteName: 'So', pitchBend: -0.25, pitched: 'So ½b'}],
+            La: [{noteName: 'La', pitchBend: -0.25, pitched: 'La ½b'}],
+            Si: [{noteName: 'Si', pitchBend: -0.25, pitched: 'Si ½b'}],
         },
         Rast: {
-            Do: {noteName: 'Mi' , pitchBend: -0.25}, // Mi ½b
-            Re: {noteName: 'Fa#', pitchBend: -0.25}, // Fa ½#
-            Mi: {noteName: 'So#', pitchBend: -0.25}, // So ½#
-            Fa: {noteName: 'La' , pitchBend: -0.25}, // La ½b
-            So: {noteName: 'Si' , pitchBend: -0.25}, // Si ½b
-            La: {noteName: 'Do#', pitchBend: -0.25}, // Do ½#
-            Si: {noteName: 'Re#', pitchBend: -0.25}, // Re ½#
+            Do: [{noteName: 'Mi' , pitchBend: -0.25, pitched: 'Mi ½b'}, {noteName: 'Si' , pitchBend: -0.25, pitched: 'Si ½b'}],
+            Re: [{noteName: 'Fa#', pitchBend: -0.25, pitched: 'Fa ½#'}, {noteName: 'Do#', pitchBend: -0.25, pitched: 'Do ½#'}],
+            Mi: [{noteName: 'So#', pitchBend: -0.25, pitched: 'So ½#'}, {noteName: 'Re#', pitchBend: -0.25, pitched: 'Re ½#'}],
+            Fa: [{noteName: 'La' , pitchBend: -0.25, pitched: 'La ½b'}, {noteName: 'Mi' , pitchBend: -0.25, pitched: 'Mi ½b'}],
+            So: [{noteName: 'Si' , pitchBend: -0.25, pitched: 'Si ½b'}, {noteName: 'Fa#', pitchBend: -0.25, pitched: 'Fa ½#'}],
+            La: [{noteName: 'Do#', pitchBend: -0.25, pitched: 'Do ½#'}, {noteName: 'So#', pitchBend: -0.25, pitched: 'So ½#'}],
+            Si: [{noteName: 'Re#', pitchBend: -0.25, pitched: 'Re ½#'}, {noteName: 'La' , pitchBend: -0.25, pitched: 'La ½#'}],
         },
         // no pitch bend in the following
         Hijaz: {
@@ -186,16 +186,10 @@ org.klesun.RanamTest = function(form){
                 // unknown Scale name
                 continue;
             }
-            let pitchInfo = keyNotes[startingNote];
-            if (!pitchInfo) {
-                // if note outside the scale was played
-                continue;
-            }
-            if (matchesNoteName(semitone, pitchInfo.noteName)) {
-                return pitchInfo.pitchBend;
-            } else {
-                // not the bended note
-                continue;
+            for (let pitchInfo of keyNotes[startingNote] || []) {
+                if (matchesNoteName(semitone, pitchInfo.noteName)) {
+                    return pitchInfo.pitchBend;
+                }
             }
         }
         return null;
@@ -341,11 +335,13 @@ org.klesun.RanamTest = function(form){
         let scale = $$('select.scale', div)[0].value;
         let keyNote = $$('select.key-note', div)[0].value;
         let keyNotes = scaleMapping[scale];
-        let info = '?#: ?½#';
+        let info = 'no pitch bend';
         if (keyNotes) {
-            let pitchInfo = keyNotes[keyNote];
-            if (pitchInfo) {
-                info = pitchInfo.noteName + ': ' + pitchInfo.pitchBend;
+            let infos = (keyNotes[keyNote] || [])
+                .map(pitchInfo => (pitchInfo.noteName + ' ')
+                    .slice(0,3) + ': ' + pitchInfo.pitched);
+            if (infos.length > 0) {
+                info = infos.join(' <b>&</b> ');
             }
         }
         $$('.info-holder', div).forEach(span => span.innerHTML = info);

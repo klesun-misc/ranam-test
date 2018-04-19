@@ -33,7 +33,8 @@
     <div style="padding: 8px;">
         <div style="padding: 8px;" class="region-list">
             <div>
-                <!--<input type="number" class="scale" value="0" min="-7" max="7" step="1"/>-->
+                <label>From (Inclusive): <input type="number" value="0" step="384" min="0" max="38400" class="from"/></label>
+                <label>To (Exclusive): <input type="number" value="0" step="384" min="0" max="38400" class="to"/></label>
                 <label>Scale: <select class="scale">
                     <option>Bayati</option>
                     <option>Saba</option>
@@ -43,6 +44,7 @@
                     <option>Nahawand</option>
                     <option>Kurd</option>
                     <option>Ajam</option>
+                    <option value="">---</option>
                 </select></label>
                 <label>Key Note: <select class="key-note">
                     <option value="Do">C (Do)</option> <!-- 0 -->
@@ -54,8 +56,6 @@
                     <option value="Si">B (Si)</option> <!-- 6 -->
                 </select></label>
                 <label>Affects: <span class="info-holder">?#: ?½#</span></label>
-                <label>From (Inclusive): <input type="number" value="0" step="384" min="0" max="38400" class="from"/></label>
-                <label>To (Exclusive): <input type="number" value="0" step="384" min="0" max="38400" class="to"/></label>
             </div>
         </div>
         <button type="button" class="add-another-region">Add another region</button><br/>
@@ -82,6 +82,9 @@
         background-color: #DDDDDD;
         padding-right: 4px;
         padding-left: 4px;
+    }
+    .info-holder {
+        font-family: monospace;
     }
     table {
         margin: 12px;
