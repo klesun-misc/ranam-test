@@ -118,7 +118,7 @@ org.klesun.RanamTest = function(form){
                 // add control change event and program change 123, bird tweet
                 makeOadEvents(formParams.oudChanNum)
                     .forEach(e => jsmidgenTrack.addEvent(e));
-            } else if (i == formParams.arabicDrumTrackNum) {
+            } else if (i == formParams.tablaTrackNum) {
                 // add control change event for drums... what was it again?
             }
 
@@ -161,7 +161,7 @@ org.klesun.RanamTest = function(form){
             }),
         oudTrackNum: gui.oudTrackNumInput.value,
         oudChanNum: gui.oudChanNumInput.value,
-        arabicDrumTrackNum: gui.arabicDrumTrackNumInput.value,
+        tablaTrackNum: gui.tablaTrackNumInput.value,
     };
 
     let gui = {
@@ -172,7 +172,7 @@ org.klesun.RanamTest = function(form){
         addAnotherRegionBtn: $$('button.add-another-region', form)[0],
         oudTrackNumInput: $$('input.oud-track-num', form)[0],
         oudChanNumInput: $$('input.oud-chan-num', form)[0],
-        arabicDrumTrackNumInput: $$('input.arabic-drum-track-num', form)[0],
+        tablaTrackNumInput: $$('input.tabla-track-num', form)[0],
         convertBtn: $$('button.convert-to-arabic', form)[0],
     };
 
@@ -180,6 +180,26 @@ org.klesun.RanamTest = function(form){
     {
         let ticksPerTrack = smfReader.tracks.map(t => t.events.reduce((sum, e) => sum + e.delta, 0));
         return Math.max(...ticksPerTrack);
+    };
+
+    let validateSmf = function(smfReader, params) {
+        let oudTrackNum = params.oudTrackNum;
+        if (oudTrackNum > smfReader.tracks.length) {
+            return 'Specified Oud track number ' + oudTrackNum + ' is outside of ' + smfReader.tracks.length + ' tracks range in the MIDI file';
+        }
+        let oudTrack = smfReader.tracks[oudTrackNum];
+
+        for (let i = 0; i < oudTrack.events.length; ++i) {
+            let event = oudTrack.events[i];
+            if (event.type === 'MIDI' && event.midiEventType == 9) { // NOTE ON
+                let semitones = event.parameter1;
+                if (semitones < 43 || semitones > 64) {
+                    return 'Notes in the Oud track (' + semitones + ') are outside of range (43-64) at index ' + i;
+                }
+            }
+        }
+
+        return null; // no errors
     };
 
     let main = function (){
@@ -211,8 +231,14 @@ org.klesun.RanamTest = function(form){
                 gui.convertBtn.removeAttribute('disabled');
             });
         gui.convertBtn.onclick = () => {
-            let buff = smfReaderToBuff(currentSmf, collectParams(gui));
-            saveMidiToDisc(buff);
+            let params = collectParams(gui);
+            let error = validateSmf(currentSmf, params);
+            if (error) {
+                alert('Invalid MIDI file: ' + error);
+            } else {
+                let buff = smfReaderToBuff(currentSmf, params);
+                saveMidiToDisc(buff);
+            }
         };
         gui.addAnotherRegionBtn.onclick = () => {
             let last = $$(':scope > *', gui.regionListCont).slice(-1)[0];
