@@ -31,12 +31,13 @@
     </div>
     <label>Scale Regions:</label><br/>
     <div style="padding: 8px;">
+        <button type="button" class="add-another-region">Add another region</button><br/>
         <div style="padding: 8px;" class="region-list">
             <div>
-                <button type="button" class="remove-region">Remove</button>
-                <label>From (Inclusive): <input type="number" value="0" step="384" min="0" max="38400" class="from"/></label>
-                <label>To (Exclusive): <input type="number" value="0" step="384" min="0" max="38400" class="to"/></label>
-                <label>Scale: <select class="scale">
+                <button type="button" class="remove-region">X</button>
+                <span>From (Incl.): <input type="number" value="0" step="384" min="0" max="38400" class="from"/></span>
+                <span>To (Excl.): <input type="number" value="0" step="384" min="0" max="38400" class="to"/></span>
+                <span>Scale: <select class="scale">
                     <option>Bayati</option>
                     <option>Saba</option>
                     <option>Sikah</option>
@@ -46,8 +47,8 @@
                     <option>Kurd</option>
                     <option>Ajam</option>
                     <option value="">---</option>
-                </select></label>
-                <label>Key Note: <select class="key-note">
+                </select></span>
+                <span>Key Note: <select class="key-note">
                     <option value="Do">C (Do)</option> <!-- 0 -->
                     <option value="Re">D (Re)</option> <!-- 1 -->
                     <option value="Mi">E (Mi)</option> <!-- 2 -->
@@ -55,11 +56,36 @@
                     <option value="So">G (So)</option> <!-- 4 -->
                     <option value="La">A (La)</option> <!-- 5 -->
                     <option value="Si">B (Si)</option> <!-- 6 -->
-                </select></label>
-                <label>Affects: <span class="info-holder">?#: ?½#</span></label>
+                </select></span>
+                <span class="info-holder"></span>
+                <span style="white-space: nowrap;">
+                    Pitch-bends:
+                    <button type="button" class="add-pitch-bend" onclick="alert('TODO: implement!');">Add</button>
+                    <span class="pitch-bend-list">
+                        <span>
+                            <select class="pitched-note">
+                                <option>Do</option>
+                                <option>Do#</option>
+                                <option>Re</option>
+                                <option>Re#</option>
+                                <option>Mi</option>
+                                <option>Fa</option>
+                                <option>Fa#</option>
+                                <option>So</option>
+                                <option>So#</option>
+                                <option>La</option>
+                                <option>La#</option>
+                                <option>Si</option>
+                            </select>
+                            =>
+                            <input class="pitch-result" type="text" disabled="disabled"/>
+                            <input type="number" value="0" min="-1" max="1" step="0.25" class="pitch-bend"/>
+                            <button type="button" class="remove-pitched-note" onclick="alert('TODO: implement!');">X</button>
+                        </span>
+                    </span>
+                </span>
             </div>
         </div>
-        <button type="button" class="add-another-region">Add another region</button><br/>
     </div>
     <label>Oud Track: <input type="number" value="1" min="0" max="15" step="1" class="oud-track-num"/></label><br/>
     <label>Oud Channel: <input type="number" value="0" min="0" max="15" step="1" class="oud-chan-num"/></label><br/>
@@ -75,17 +101,37 @@
 </script>
 
 <style>
+    span {
+        display: inline-block;
+    }
+    button.remove-region, button.remove-pitched-note {
+        color: darkred;
+        font-weight: bold;
+        font-size: 10px;
+    }
+    input.pitch-result {
+        width: 50px;
+    }
     .region-list > * {
         margin-bottom: 3px;
-        background-color: #EEEEEE;
+        padding: 2px;
+        background-color: #9ccffb;
     }
-    .region-list label {
-        background-color: #DDDDDD;
-        padding-right: 4px;
-        padding-left: 4px;
+    .region-list > * > span {
+        background-color: #d3ecef;
+        border: solid #3685ab 1px;
+        padding: 2px;
+        margin: 2px;
+        white-space: nowrap;
     }
-    .info-holder {
-        font-family: monospace;
+    .pitch-bend-list > * {
+        background-color: #a6e8ab;
+        border: solid #3685ab 1px;
+        padding: 2px;
+        margin-left: 4px;
+    }
+    input.pitch-bend {
+        width: 60px;
     }
     table {
         margin: 12px;

@@ -281,6 +281,8 @@ org.klesun.RanamTest = function(form){
         smfInput: $$('input[type="file"].midi-file', form)[0],
         ticksPerBeatHolder: $$('.ticks-per-beat', form)[0],
         regionListCont: $$('.region-list', form)[0],
+        regionRef: $$('.region-list > *', form)[0].cloneNode(true),
+        pitchBendRef: $$('.pitch-bend-list > *', form)[0].cloneNode(true),
         currentTracks: $$('tbody.current-tracks', form)[0],
         addAnotherRegionBtn: $$('button.add-another-region', form)[0],
         oudTrackNumInput: $$('input.oud-track-num', form)[0],
@@ -332,19 +334,24 @@ org.klesun.RanamTest = function(form){
 
     let updateScaleInfo = function(div)
     {
+        let pitchBendList = $$('.pitch-bend-list', div)[0];
+        pitchBendList.innerHTML = '';
         let scale = $$('select.scale', div)[0].value;
         let keyNote = $$('select.key-note', div)[0].value;
         let keyNotes = scaleMapping[scale];
-        let info = 'no pitch bend';
+        pitchBendList.innerHTML = '';
         if (keyNotes) {
-            let infos = (keyNotes[keyNote] || [])
-                .map(pitchInfo => (pitchInfo.noteName + ' ')
-                    .slice(0,3) + ': ' + pitchInfo.pitched);
-            if (infos.length > 0) {
-                info = infos.join(' <b>&</b> ');
+            for (let pitchInfo of keyNotes[keyNote] || []) {
+                let pitchBend = gui.pitchBendRef.cloneNode(true);
+                $$('select.pitched-note', pitchBend)[0].value = pitchInfo.noteName;
+                $$('input.pitch-bend', pitchBend)[0].value = pitchInfo.pitchBend;
+                $$('.pitch-result', pitchBend)[0].value = pitchInfo.pitched;
+                pitchBendList.appendChild(pitchBend);
             }
         }
-        $$('.info-holder', div).forEach(span => span.innerHTML = info);
+        if (!pitchBendList.innerHTML) {
+            $$('.info-holder', div).forEach(span => span.innerHTML = 'no pitch bend');
+        }
     };
 
     let hangScaleHandlers = function(div)
@@ -379,6 +386,7 @@ org.klesun.RanamTest = function(form){
                     .forEach(div => updateScaleTimeRanges(
                         div, smf.ticksPerBeat, totalTicks
                     ));
+                updateScaleTimeRanges(gui.regionRef, smf.ticksPerBeat, totalTicks);
 
                 currentSmf = smf;
                 gui.convertBtn.removeAttribute('disabled');
@@ -395,11 +403,9 @@ org.klesun.RanamTest = function(form){
                 saveMidiToDisc(buff);
             }
         };
-        let regionRef = $$(':scope > *', gui.regionListCont)
-            .slice(-1)[0].cloneNode(true);
         hangScaleHandlers($$(':scope > *', gui.regionListCont)[0]);
         gui.addAnotherRegionBtn.onclick = () => {
-            let cloned = regionRef.cloneNode(true);
+            let cloned = gui.regionRef.cloneNode(true);
             hangScaleHandlers(cloned);
             gui.regionListCont.appendChild(cloned);
         };
