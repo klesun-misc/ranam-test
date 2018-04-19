@@ -44,7 +44,7 @@ org.klesun.RanamTest = function(form){
         saveAs(blob, 'ranam_song.mid', true);
     };
 
-    let readerToJsmidgenEvent = function(readerEvent, isOudTrack)
+    let readerToJsmidgenEvent = function(readerEvent, isOudTrack, isTablaTrack)
     {
         if (readerEvent.type === 'MIDI') {
             if (isOudTrack && readerEvent.midiEventType == 14) {
@@ -52,9 +52,23 @@ org.klesun.RanamTest = function(form){
                 // original song to mess up our pitch bends
                 return null;
             } else {
+                let channel = readerEvent.midiChannel;
+                if (isOudTrack) {
+                    channel = 0;
+                } else if (channel == 0) {
+                    // original song got some notes in 0-th channel we reserve for Oud
+                    channel = 8; // 8 is big enough number, the channel is likely free
+                }
+                if (isTablaTrack) {
+                    channel = 10;
+                } else if (channel == 10) {
+                    // original song got some notes in 10-th channel we reserve for Tabla
+                    channel = 7; // close enough to 10
+                }
+                // NOTE ON/OFF
                 return new Midi.Event({
                     type: readerEvent.midiEventType * 16,
-                    channel: readerEvent.midiChannel,
+                    channel: channel,
                     param1: readerEvent.parameter1,
                     param2: readerEvent.parameter2,
                     time: readerEvent.delta,
@@ -217,16 +231,11 @@ org.klesun.RanamTest = function(form){
             let jsmidgenTrack = new Midi.Track();
 
             let isOudTrack = i == formParams.oudTrackNum;
+            let isTablaTrack = i == formParams.tablaTrackNum;
             if (isOudTrack) {
                 // add control change event and program change 123, bird tweet
-                // TODO: make sure all Oud track notes are on the channel
-                // 0 (0-15) and is the only instrument on the channel
                 makeOadEvents(0)
                     .forEach(e => jsmidgenTrack.addEvent(e));
-            } else if (i == formParams.tablaTrackNum) {
-                // add control change event for drums... what was it again?
-                // TODO: make sure all Tabla track notes are on the 10 (0-15)
-                // channel and is the only instrument on the channel
             }
 
             let timeTicks = 0;
@@ -235,7 +244,7 @@ org.klesun.RanamTest = function(form){
             for (let readerEvent of readerTrack.events) {
                 timeTicks += readerEvent.delta;
                 let scales = scaleRegions.filter(s => s.from <= timeTicks && s.to > timeTicks);
-                let jsmidgenEvent = readerToJsmidgenEvent(readerEvent, isOudTrack);
+                let jsmidgenEvent = readerToJsmidgenEvent(readerEvent, isOudTrack, isTablaTrack);
                 let isNoteEvent = readerEvent.type === 'MIDI' &&
                     [8,9].includes(readerEvent.midiEventType);
                 let isNoteOn = readerEvent.midiEventType == 9 && readerEvent.parameter2 > 0;
