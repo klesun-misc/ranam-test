@@ -79,7 +79,7 @@ org.klesun.RanamTest = function(form){
     let makePitchBend = function(koef, channel)
     {
         let intvalue = Math.round(16383 / 2 * (koef + 1));
-        let [b1,b2] = [intvalue % 128, intvalue >> 7];
+        let [b1,b2] = [intvalue % 128, (intvalue >> 7) % 128];
 
         return new Midi.Event({
             type: Midi.Event.PITCH_BEND,
@@ -179,16 +179,9 @@ org.klesun.RanamTest = function(form){
     let getOudPitchBend = function(semitone, scales)
     {
         for (let scaleData of scales) {
-            let scale = scales ? scaleData.scale : null;
-            let startingNote = scales ? scaleData.startingNote : null;
-            let keyNotes = scaleMapping[scale];
-            if (!keyNotes) {
-                // unknown Scale name
-                continue;
-            }
-            for (let pitchInfo of keyNotes[startingNote] || []) {
+            for (let pitchInfo of scaleData.pitchBends) {
                 if (matchesNoteName(semitone, pitchInfo.noteName)) {
-                    return pitchInfo.pitchBend;
+                    return +pitchInfo.pitchBend;
                 }
             }
         }
@@ -202,7 +195,7 @@ org.klesun.RanamTest = function(form){
 
         let jsmidgenTracks = [];
         for (let i = 0; i < smfReader.tracks.length; ++i) {
-            let noteToPitchBend = new Set();
+            let pitchBendNotes = new Set();
 
             let readerTrack = smfReader.tracks[i];
             let jsmidgenTrack = new Midi.Track();
@@ -210,10 +203,14 @@ org.klesun.RanamTest = function(form){
             let isOudTrack = i == formParams.oudTrackNum;
             if (isOudTrack) {
                 // add control change event and program change 123, bird tweet
-                makeOadEvents(formParams.oudChanNum)
+                // TODO: make sure all Oud track notes are on the channel
+                // 0 (0-15) and is the only instrument on the channel
+                makeOadEvents(0)
                     .forEach(e => jsmidgenTrack.addEvent(e));
             } else if (i == formParams.tablaTrackNum) {
                 // add control change event for drums... what was it again?
+                // TODO: make sure all Tabla track notes are on the 10 (0-15)
+                // channel and is the only instrument on the channel
             }
 
             let timeTicks = 0;
@@ -232,7 +229,7 @@ org.klesun.RanamTest = function(form){
                     let koef = getOudPitchBend(semitones, scales);
                     if (koef) {
                         jsmidgenTrack.addEvent(makePitchBend(koef, readerEvent.midiChannel));
-                        noteToPitchBend.add(semitones);
+                        pitchBendNotes.add(semitones);
                     }
                 }
                 if (jsmidgenEvent) {
@@ -241,9 +238,9 @@ org.klesun.RanamTest = function(form){
                 if (isOudTrack && isNoteEvent && !isNoteOn) {
                     // Oud NOTE OFF just fired, should reset pitch bend
                     let semitones = readerEvent.parameter1;
-                    if (noteToPitchBend.has(semitones)) {
+                    if (pitchBendNotes.has(semitones)) {
                         jsmidgenTrack.addEvent(makePitchBend(0, readerEvent.midiChannel));
-                        noteToPitchBend.delete(semitones);
+                        pitchBendNotes.delete(semitones);
                     }
                 }
             }
@@ -271,9 +268,13 @@ org.klesun.RanamTest = function(form){
                 startingNote: $$('select.key-note', div)[0].value,
                 from: $$('input.from', div)[0].value,
                 to: $$('input.to', div)[0].value,
+                pitchBends: $$('.pitch-bend-list > *', div)
+                    .map(span => 1 && {
+                        noteName: $$('select.pitched-note', span)[0].value,
+                        pitchBend: $$('input.pitch-bend', span)[0].value,
+                    }),
             }),
         oudTrackNum: gui.oudTrackNumInput.value,
-        oudChanNum: gui.oudChanNumInput.value,
         tablaTrackNum: gui.tablaTrackNumInput.value,
     };
 
@@ -286,7 +287,6 @@ org.klesun.RanamTest = function(form){
         currentTracks: $$('tbody.current-tracks', form)[0],
         addAnotherRegionBtn: $$('button.add-another-region', form)[0],
         oudTrackNumInput: $$('input.oud-track-num', form)[0],
-        oudChanNumInput: $$('input.oud-chan-num', form)[0],
         tablaTrackNumInput: $$('input.tabla-track-num', form)[0],
         convertBtn: $$('button.convert-to-arabic', form)[0],
     };
@@ -332,6 +332,15 @@ org.klesun.RanamTest = function(form){
         });
     };
 
+    let addPitchBendNote = function(pitchBendList)
+    {
+        let pitchBend = gui.pitchBendRef.cloneNode(true);
+        $$('button.remove-pitched-note', pitchBend)[0]
+            .onclick = () => pitchBend.remove();
+        pitchBendList.appendChild(pitchBend);
+        return pitchBend;
+    };
+
     let updateScaleInfo = function(div)
     {
         let pitchBendList = $$('.pitch-bend-list', div)[0];
@@ -342,11 +351,10 @@ org.klesun.RanamTest = function(form){
         pitchBendList.innerHTML = '';
         if (keyNotes) {
             for (let pitchInfo of keyNotes[keyNote] || []) {
-                let pitchBend = gui.pitchBendRef.cloneNode(true);
+                let pitchBend = addPitchBendNote(pitchBendList);
                 $$('select.pitched-note', pitchBend)[0].value = pitchInfo.noteName;
                 $$('input.pitch-bend', pitchBend)[0].value = pitchInfo.pitchBend;
                 $$('.pitch-result', pitchBend)[0].value = pitchInfo.pitched;
-                pitchBendList.appendChild(pitchBend);
             }
         }
         if (!pitchBendList.innerHTML) {
@@ -354,12 +362,15 @@ org.klesun.RanamTest = function(form){
         }
     };
 
-    let hangScaleHandlers = function(div)
+    let initScale = function(div)
     {
         let onchange = () => updateScaleInfo(div);
         $$('select.scale', div)[0].onchange = onchange;
         $$('select.key-note', div)[0].onchange = onchange;
         $$('button.remove-region', div)[0].onclick = () => div.remove();
+        $$('button.add-pitch-bend', div)[0].onclick = () => {
+            addPitchBendNote($$('.pitch-bend-list', div)[0]);
+        };
         onchange();
     };
 
@@ -403,10 +414,10 @@ org.klesun.RanamTest = function(form){
                 saveMidiToDisc(buff);
             }
         };
-        hangScaleHandlers($$(':scope > *', gui.regionListCont)[0]);
+        initScale($$(':scope > *', gui.regionListCont)[0]);
         gui.addAnotherRegionBtn.onclick = () => {
             let cloned = gui.regionRef.cloneNode(true);
-            hangScaleHandlers(cloned);
+            initScale(cloned);
             gui.regionListCont.appendChild(cloned);
         };
     };

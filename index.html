@@ -34,7 +34,9 @@
         <button type="button" class="add-another-region">Add another region</button><br/>
         <div style="padding: 8px;" class="region-list">
             <div>
-                <button type="button" class="remove-region">X</button>
+                <span>
+                    <button type="button" class="remove-region">X</button>
+                </span>
                 <span>From (Incl.): <input type="number" value="0" step="384" min="0" max="38400" class="from"/></span>
                 <span>To (Excl.): <input type="number" value="0" step="384" min="0" max="38400" class="to"/></span>
                 <span>Scale: <select class="scale">
@@ -58,7 +60,7 @@
                     <option value="Si">B (Si)</option> <!-- 6 -->
                 </select></span>
                 <span class="info-holder"></span>
-                <span style="white-space: nowrap;">
+                <span>
                     Pitch-bends:
                     <button type="button" class="add-pitch-bend" onclick="alert('TODO: implement!');">Add</button>
                     <span class="pitch-bend-list">
@@ -66,7 +68,7 @@
                             <select class="pitched-note">
                                 <option>Do</option>
                                 <option>Do#</option>
-                                <option>Re</option>
+                                <option selected="selected">Re</option>
                                 <option>Re#</option>
                                 <option>Mi</option>
                                 <option>Fa</option>
@@ -78,8 +80,8 @@
                                 <option>Si</option>
                             </select>
                             =>
-                            <input class="pitch-result" type="text" disabled="disabled"/>
-                            <input type="number" value="0" min="-1" max="1" step="0.25" class="pitch-bend"/>
+                            <input class="pitch-result" type="text" value="Re ½b" disabled="disabled"/>
+                            <input type="number" value="-0.25" min="-1" max="1" step="0.25" class="pitch-bend"/>
                             <button type="button" class="remove-pitched-note" onclick="alert('TODO: implement!');">X</button>
                         </span>
                     </span>
@@ -88,7 +90,6 @@
         </div>
     </div>
     <label>Oud Track: <input type="number" value="1" min="0" max="15" step="1" class="oud-track-num"/></label><br/>
-    <label>Oud Channel: <input type="number" value="0" min="0" max="15" step="1" class="oud-chan-num"/></label><br/>
     <label>Tabla Track: <input type="number" value="2" min="0" max="15" step="1" class="tabla-track-num"/></label><br/>
     <button type="button" disabled="disabled" title="Upload General MIDI first!" class="convert-to-arabic">Convert to Ranam-format MIDI</button>
 </form>
@@ -113,16 +114,15 @@
         width: 50px;
     }
     .region-list > * {
-        margin-bottom: 3px;
-        padding: 2px;
-        background-color: #9ccffb;
+        background-color: #6094c1;
+        border: solid #b3e49a 2px;
+        margin-bottom: 6px;
     }
     .region-list > * > span {
         background-color: #d3ecef;
-        border: solid #3685ab 1px;
+        border: solid white 2px;
         padding: 2px;
-        margin: 2px;
-        white-space: nowrap;
+        margin: 3px;
     }
     .pitch-bend-list > * {
         background-color: #a6e8ab;
