@@ -36,7 +36,7 @@ org.klesun.RanamTest = function(form){
     let saveMidiToDisc = function(buff)
     {
         let blob = new Blob([buff], {type: "midi/binary"});
-        saveAs(blob, 'song.mid', true);
+        saveAs(blob, 'ranam_song.mid', true);
     };
 
     let readerToJsmidgenEvent = function(readerEvent)
@@ -104,6 +104,26 @@ org.klesun.RanamTest = function(form){
         ];
     };
 
+    let getOudPitchBend = function(semitone, scale)
+    {
+        if (['Bayati', 'Saba', 'Sikah', 'Rast'].includes(scale)) {
+            let isDoReMiFaSoLaTi = true;
+            if (isDoReMiFaSoLaTi) {
+                // half a step below a note
+                // expecting that midi range is set to +-2 semitones
+                return -0.25;
+            } else {
+                return 0;
+            }
+        } else if (['Hijaz', 'Nahawand', 'Kurd', 'Ajam'].includes(scale)) {
+            // no pitch bend
+            return 0;
+        } else {
+            // unknown;
+            return 0;
+        }
+    };
+
     let smfReaderToBuff = function(smfReader, formParams)
     {
         /** @debug */
@@ -114,7 +134,8 @@ org.klesun.RanamTest = function(form){
             let readerTrack = smfReader.tracks[i];
             let jsmidgenTrack = new Midi.Track();
 
-            if (i == formParams.oudTrackNum) {
+            let isOudTrack = i == formParams.oudTrackNum;
+            if (isOudTrack) {
                 // add control change event and program change 123, bird tweet
                 makeOadEvents(formParams.oudChanNum)
                     .forEach(e => jsmidgenTrack.addEvent(e));
@@ -122,14 +143,27 @@ org.klesun.RanamTest = function(form){
                 // add control change event for drums... what was it again?
             }
 
-            // add quarter-tone pitch-bend to every track for test
-            for (let i = 0; i < 16; ++i) {
-                jsmidgenTrack.addEvent(makePitchBend(0.25, i));
-            }
-
             for (let readerEvent of readerTrack.events) {
                 let jsmidgenEvent = readerToJsmidgenEvent(readerEvent);
-                if (jsmidgenEvent) {
+                let currentScale = 'Bayati'; /** @debug */
+                if (readerEvent.type === 'meta' && readerEvent.metaType == 47) {
+                    // End Of Track message, will be added automatically by
+                    // jsmidgen, so no need to dupe it, it causes problems
+                } else if (jsmidgenEvent) {
+                    if (isOudTrack && readerEvent.type === 'MIDI' &&
+                        [8,9].includes(readerEvent.midiEventType) // NOTE ON/OFF
+                    ) {
+                        let semitone = readerEvent.parameter1;
+                        let velocity = readerEvent.parameter2;
+                        let isNoteOn = readerEvent.midiEventType == 8 && velocity > 0;
+                        if (isNoteOn) {
+                            let koef = getOudPitchBend(semitone, currentScale);
+                            jsmidgenTrack.addEvent(makePitchBend(koef, readerEvent.midiChannel));
+                        } else {
+                            // NOTE OFF - reset pitch bend
+                            jsmidgenTrack.addEvent(makePitchBend(0, readerEvent.midiChannel));
+                        }
+                    }
                     jsmidgenTrack.addEvent(jsmidgenEvent);
                 } else {
                     console.debug('Failed to transform SMFReader event to jsmidgen format', readerEvent);
@@ -138,7 +172,7 @@ org.klesun.RanamTest = function(form){
             jsmidgenTracks.push(jsmidgenTrack);
         }
         let jsmidgenSmf = new Midi.File({
-            ticks: smfReader.ticksPerBeatticksPerBeat,
+            ticks: smfReader.ticksPerBeat,
             tracks: jsmidgenTracks,
         });
 
