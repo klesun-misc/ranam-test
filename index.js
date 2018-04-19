@@ -301,7 +301,8 @@ org.klesun.RanamTest = function(form){
         return Math.max(...ticksPerTrack);
     };
 
-    let validateSmf = function(smfReader, params) {
+    let validateSmf = function(smfReader, params)
+    {
         let oudTrackNum = params.oudTrackNum;
         if (oudTrackNum > smfReader.tracks.length) {
             return 'Specified Oud track number ' + oudTrackNum + ' is outside of ' + smfReader.tracks.length + ' tracks range in the MIDI file';
@@ -319,6 +320,43 @@ org.klesun.RanamTest = function(form){
         }
 
         return null; // no errors
+    };
+
+    let updateScaleTimeRanges = function(div, ticketPerBeat, totalTicks)
+    {
+        $$('input.from', div).forEach(inp => {
+            inp.setAttribute('step', ticketPerBeat);
+            inp.setAttribute('max', totalTicks);
+            inp.value = 0;
+        });
+        $$('input.to', div).forEach(inp => {
+            inp.setAttribute('step', ticketPerBeat);
+            inp.setAttribute('max', totalTicks);
+            inp.value = totalTicks;
+        });
+    };
+
+    let updateScaleInfo = function(div)
+    {
+        let scale = $$('select.scale', div)[0].value;
+        let keyNote = $$('select.key-note', div)[0].value;
+        let keyNotes = scaleMapping[scale];
+        let info = '?#: ?½#';
+        if (keyNotes) {
+            let pitchInfo = keyNotes[keyNote];
+            if (pitchInfo) {
+                info = pitchInfo.noteName + ': ' + pitchInfo.pitchBend;
+            }
+        }
+        $$('.info-holder', div).forEach(span => span.innerHTML = info);
+    };
+
+    let hangScaleHandlers = function(div)
+    {
+        let onchange = () => updateScaleInfo(div);
+        $$('select.scale', div)[0].onchange = onchange;
+        $$('select.key-note', div)[0].onchange = onchange;
+        onchange();
     };
 
     let main = function (){
@@ -341,18 +379,9 @@ org.klesun.RanamTest = function(form){
                 let totalTicks = getTotalTicks(smf);
                 gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
                 $$(':scope > div', gui.regionListCont)
-                    .forEach(div => {
-                        $$('input.from', div).forEach(inp => {
-                            inp.setAttribute('step', smf.ticksPerBeat);
-                            inp.setAttribute('max', totalTicks);
-                            inp.value = 0;
-                        });
-                        $$('input.to', div).forEach(inp => {
-                            inp.setAttribute('step', smf.ticksPerBeat);
-                            inp.setAttribute('max', totalTicks);
-                            inp.value = totalTicks;
-                        });
-                    });
+                    .forEach(div => updateScaleTimeRanges(
+                        div, smf.ticksPerBeat, totalTicks
+                    ));
 
                 currentSmf = smf;
                 gui.convertBtn.removeAttribute('disabled');
@@ -369,9 +398,12 @@ org.klesun.RanamTest = function(form){
                 saveMidiToDisc(buff);
             }
         };
+        hangScaleHandlers($$(':scope > *', gui.regionListCont)[0]);
         gui.addAnotherRegionBtn.onclick = () => {
             let last = $$(':scope > *', gui.regionListCont).slice(-1)[0];
-            gui.regionListCont.appendChild(last.cloneNode(true));
+            let cloned = last.cloneNode(true);
+            hangScaleHandlers(cloned);
+            gui.regionListCont.appendChild(cloned);
         };
     };
 
