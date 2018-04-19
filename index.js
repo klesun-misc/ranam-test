@@ -169,6 +169,16 @@ org.klesun.RanamTest = function(form){
         },
     };
 
+    let noteNameToPitchBendToPitched = {};
+    for (let [s,keyNotes] of Object.entries(scaleMapping)) {
+        for (let [k,pitchInfos] of Object.entries(keyNotes)) {
+            for (let pitchInfo of pitchInfos) {
+                noteNameToPitchBendToPitched[pitchInfo.noteName] = noteNameToPitchBendToPitched[pitchInfo.noteName] || {};
+                noteNameToPitchBendToPitched[pitchInfo.noteName][pitchInfo.pitchBend] = pitchInfo.pitched;
+            }
+        }
+    }
+
     let matchesNoteName = function(semitone, name)
     {
         let clean = name.slice(0, 2);
@@ -338,13 +348,54 @@ org.klesun.RanamTest = function(form){
         });
     };
 
+    let getFractionChar = function(num)
+    {
+        if (num == '1') {
+            return '';
+        } else if (num == '0.75') {
+            return '¾';
+        } else if (num == '0.5') {
+            return '½';
+        } else if (num == '0.25') {
+            return '¼';
+        } else if (Math.abs(num - 0.3333333333) < 0.0000001) {
+            return '⅓';
+        } else if (Math.abs(num - 0.6666666666) < 0.0000001) {
+            return '⅔';
+        } else {
+            return num + '';
+        }
+    };
+
+    let getPitchResultNote = function(noteName, pitchBend)
+    {
+        let clean = noteName.slice(0, 2);
+        let sign = noteName.slice(2);
+        if (pitchBend == 0) {
+            return noteName;
+        } else if (sign == '#' && pitchBend < 0) {
+            return clean + ' ' + getFractionChar(-pitchBend) + sign;
+        } else if (sign == '' && pitchBend < 0) {
+            return clean + ' ' + getFractionChar(-pitchBend) + 'b';
+        } else {
+            return '';
+        }
+    };
+
     let addPitchBendNote = function(pitchBendList)
     {
-        let pitchBend = gui.pitchBendRef.cloneNode(true);
-        $$('button.remove-pitched-note', pitchBend)[0]
-            .onclick = () => pitchBend.remove();
-        pitchBendList.appendChild(pitchBend);
-        return pitchBend;
+        let pitchBendSpan = gui.pitchBendRef.cloneNode(true);
+        let onchange = () => {
+            let noteName = $$('select.pitched-note', pitchBendSpan)[0].value;
+            let pitchBend = $$('input.pitch-bend', pitchBendSpan)[0].value;
+            $$('.pitch-result', pitchBendSpan)[0].value = getPitchResultNote(noteName, pitchBend);
+        };
+        $$('select.pitched-note', pitchBendSpan)[0].onchange = onchange;
+        $$('input.pitch-bend', pitchBendSpan)[0].onchange = onchange;
+        $$('button.remove-pitched-note', pitchBendSpan)[0]
+            .onclick = () => pitchBendSpan.remove();
+        pitchBendList.appendChild(pitchBendSpan);
+        return pitchBendSpan;
     };
 
     let updateScaleInfo = function(div)
