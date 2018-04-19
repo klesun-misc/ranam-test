@@ -18,6 +18,11 @@ org.klesun.RanamTest = function(form){
 
     let loadSelectedFile = function(fileInfo, whenLoaded)
     {
+        if (!fileInfo) {
+            // if user cancelled "Choose File" pop-up
+            return null;
+        }
+
         let maxSize = 2 * 1024 * 1024; // 2 mebibytes
 
         if (fileInfo.size < maxSize ||
@@ -50,11 +55,17 @@ org.klesun.RanamTest = function(form){
                 time: readerEvent.delta,
             })
         } else if (readerEvent.type === 'meta') {
-            return new Midi.MetaEvent({
-                time: readerEvent.delta,
-                type: readerEvent.metaType,
-                data: readerEvent.metaData,
-            });
+            if (readerEvent.metaType == 47) {
+                // End Of Track message, will be added automatically by
+                // jsmidgen, so no need to dupe it, it causes problems
+                return null;
+            } else {
+                return new Midi.MetaEvent({
+                    time: readerEvent.delta,
+                    type: readerEvent.metaType,
+                    data: readerEvent.metaData,
+                });
+            }
         } else {
             return null;
         }
@@ -109,8 +120,7 @@ org.klesun.RanamTest = function(form){
         if (['Bayati', 'Saba', 'Sikah', 'Rast'].includes(scale)) {
             let isDoReMiFaSoLaTi = true;
             if (isDoReMiFaSoLaTi) {
-                // half a step below a note
-                // expecting that midi range is set to +-2 semitones
+                // -2048, half a step below a note if range is default (+-2 semitones)
                 return -0.25;
             } else {
                 return 0;
@@ -143,30 +153,28 @@ org.klesun.RanamTest = function(form){
                 // add control change event for drums... what was it again?
             }
 
+            let timeTicks = 0;
+            let scaleRegions = formParams.scaleRegions;
+
             for (let readerEvent of readerTrack.events) {
+                timeTicks += readerEvent.delta;
+                let scaleRegion = scaleRegions.filter(s => s.from <= timeTicks && s.to > timeTicks)[0];
+                let scale = scaleRegion ? scaleRegion.scale : 'Unset';
                 let jsmidgenEvent = readerToJsmidgenEvent(readerEvent);
-                let currentScale = 'Bayati'; /** @debug */
-                if (readerEvent.type === 'meta' && readerEvent.metaType == 47) {
-                    // End Of Track message, will be added automatically by
-                    // jsmidgen, so no need to dupe it, it causes problems
-                } else if (jsmidgenEvent) {
-                    if (isOudTrack && readerEvent.type === 'MIDI' &&
-                        [8,9].includes(readerEvent.midiEventType) // NOTE ON/OFF
-                    ) {
-                        let semitone = readerEvent.parameter1;
-                        let velocity = readerEvent.parameter2;
-                        let isNoteOn = readerEvent.midiEventType == 8 && velocity > 0;
-                        if (isNoteOn) {
-                            let koef = getOudPitchBend(semitone, currentScale);
-                            jsmidgenTrack.addEvent(makePitchBend(koef, readerEvent.midiChannel));
-                        } else {
-                            // NOTE OFF - reset pitch bend
-                            jsmidgenTrack.addEvent(makePitchBend(0, readerEvent.midiChannel));
-                        }
-                    }
+                let isNoteEvent = readerEvent.type === 'MIDI' &&
+                    [8,9].includes(readerEvent.midiEventType);
+                let isNoteOn = readerEvent.midiEventType == 9 && readerEvent.parameter2 > 0;
+                if (isOudTrack && isNoteOn) {
+                    // Oud NOTE ON is about to fire - should set pitch bend
+                    let koef = getOudPitchBend(readerEvent.parameter1, scale);
+                    jsmidgenTrack.addEvent(makePitchBend(koef, readerEvent.midiChannel));
+                }
+                if (jsmidgenEvent) {
                     jsmidgenTrack.addEvent(jsmidgenEvent);
-                } else {
-                    console.debug('Failed to transform SMFReader event to jsmidgen format', readerEvent);
+                }
+                if (isOudTrack && isNoteEvent && !isNoteOn) {
+                    // Oud NOTE OFF just fired, should reset pitch bend
+                    jsmidgenTrack.addEvent(makePitchBend(0, readerEvent.midiChannel));
                 }
             }
             jsmidgenTracks.push(jsmidgenTrack);
@@ -187,7 +195,7 @@ org.klesun.RanamTest = function(form){
     };
 
     let collectParams = (gui) => 1 && {
-        regions: $$(':scope > *', gui.regionListCont)
+        scaleRegions: $$(':scope > *', gui.regionListCont)
             .map(div => 1 && {
                 scale: $$('select.scale', div)[0].value,
                 from: $$('input.from', div)[0].value,
@@ -255,10 +263,18 @@ org.klesun.RanamTest = function(form){
                 }
                 let totalTicks = getTotalTicks(smf);
                 gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
-                $$(':scope > div input.to', gui.regionListCont)
-                    .forEach(inp => {
-                        inp.setAttribute('step', smf.ticksPerBeat);
-                        inp.value = totalTicks;
+                $$(':scope > div', gui.regionListCont)
+                    .forEach(div => {
+                        $$('input.from', div).forEach(inp => {
+                            inp.setAttribute('step', smf.ticksPerBeat);
+                            inp.setAttribute('max', totalTicks);
+                            inp.value = 0;
+                        });
+                        $$('input.to', div).forEach(inp => {
+                            inp.setAttribute('step', smf.ticksPerBeat);
+                            inp.setAttribute('max', totalTicks);
+                            inp.value = totalTicks;
+                        });
                     });
 
                 currentSmf = smf;
