@@ -44,8 +44,11 @@ org.klesun.RanamTest = function(form){
         saveAs(blob, 'ranam_song.mid', true);
     };
 
-    let readerToJsmidgenEvent = function(readerEvent, isOudTrack, isTablaTrack)
+    let readerToJsmidgenEvent = function(readerEvent, formParams, trackNum)
     {
+        let isOudTrack = trackNum == formParams.oudTrackNum;
+        let isTablaTrack = trackNum == formParams.tablaTrackNum;
+
         if (readerEvent.type === 'MIDI') {
             if (isOudTrack && readerEvent.midiEventType == 14) {
                 // Pitch Bend - we don't want pitch bends from
@@ -75,7 +78,10 @@ org.klesun.RanamTest = function(form){
                 })
             }
         } else if (readerEvent.type === 'meta') {
-            if (readerEvent.metaType == 47) {
+            if (formParams.removeMeta) {
+                // we wanna hear how will one song sound without tempo
+                return null;
+            } else if (readerEvent.metaType == 47) {
                 // End Of Track message, will be added automatically by
                 // jsmidgen, so no need to dupe it, it causes problems
                 return null;
@@ -244,7 +250,7 @@ org.klesun.RanamTest = function(form){
             for (let readerEvent of readerTrack.events) {
                 timeTicks += readerEvent.delta;
                 let scales = scaleRegions.filter(s => s.from <= timeTicks && s.to > timeTicks);
-                let jsmidgenEvent = readerToJsmidgenEvent(readerEvent, isOudTrack, isTablaTrack);
+                let jsmidgenEvent = readerToJsmidgenEvent(readerEvent, formParams, i);
                 let isNoteEvent = readerEvent.type === 'MIDI' &&
                     [8,9].includes(readerEvent.midiEventType);
                 let isNoteOn = readerEvent.midiEventType == 9 && readerEvent.parameter2 > 0;
@@ -301,6 +307,7 @@ org.klesun.RanamTest = function(form){
             }),
         oudTrackNum: gui.oudTrackNumInput.value,
         tablaTrackNum: gui.tablaTrackNumInput.value,
+        removeMeta: gui.removeMetaFlag.checked,
     };
 
     let gui = {
@@ -314,6 +321,7 @@ org.klesun.RanamTest = function(form){
         oudTrackNumInput: $$('input.oud-track-num', form)[0],
         tablaTrackNumInput: $$('input.tabla-track-num', form)[0],
         convertBtn: $$('button.convert-to-arabic', form)[0],
+        removeMetaFlag: $$('input.remove-meta', form)[0],
     };
 
     let getTotalTicks = function(smfReader)
