@@ -75,7 +75,7 @@ org.klesun.RanamTest = function(form){
                     param1: readerEvent.parameter1,
                     param2: readerEvent.parameter2,
                     time: readerEvent.delta,
-                })
+                });
             }
         } else if (readerEvent.type === 'meta') {
             if (formParams.removeMeta) {
@@ -391,9 +391,9 @@ org.klesun.RanamTest = function(form){
         if (pitchBend == 0) {
             return noteName;
         } else if (sign == '#' && pitchBend < 0) {
-            return clean + ' ' + getFractionChar(-pitchBend) + sign;
+            return clean + ' ' + getFractionChar(-pitchBend * 2) + sign;
         } else if (sign == '' && pitchBend < 0) {
-            return clean + ' ' + getFractionChar(-pitchBend) + 'b';
+            return clean + ' ' + getFractionChar(-pitchBend * 2) + 'b';
         } else {
             return '';
         }
@@ -401,6 +401,10 @@ org.klesun.RanamTest = function(form){
 
     let addPitchBendNote = function(pitchBendList)
     {
+        let scaleBlock = pitchBendList.parentNode.parentNode;
+        let infoBlock = $$('.no-pitch-bend-msg', scaleBlock)[0];
+        infoBlock.style.display = 'none';
+
         let pitchBendSpan = gui.pitchBendRef.cloneNode(true);
         let onchange = () => {
             let noteName = $$('select.pitched-note', pitchBendSpan)[0].value;
@@ -408,9 +412,14 @@ org.klesun.RanamTest = function(form){
             $$('.pitch-result', pitchBendSpan)[0].value = getPitchResultNote(noteName, pitchBend);
         };
         $$('select.pitched-note', pitchBendSpan)[0].onchange = onchange;
-        $$('input.pitch-bend', pitchBendSpan)[0].onchange = onchange;
+        $$('input.pitch-bend', pitchBendSpan)[0].oninput = onchange;
         $$('button.remove-pitched-note', pitchBendSpan)[0]
-            .onclick = () => pitchBendSpan.remove();
+            .onclick = () => {
+                pitchBendSpan.remove();
+                if ($$('.pitch-bend-list > *', scaleBlock).length === 0) {
+                    infoBlock.style.display = 'inline';
+                }
+            };
         pitchBendList.appendChild(pitchBendSpan);
         return pitchBendSpan;
     };
@@ -432,7 +441,9 @@ org.klesun.RanamTest = function(form){
             }
         }
         if (!pitchBendList.innerHTML) {
-            $$('.info-holder', div).forEach(span => span.innerHTML = 'no pitch bend');
+            $$('.no-pitch-bend-msg', div).forEach(span => span.style.display = 'inline');
+        } else {
+            $$('.no-pitch-bend-msg', div).forEach(span => span.style.display = 'none');
         }
     };
 
@@ -441,7 +452,15 @@ org.klesun.RanamTest = function(form){
         let onchange = () => updateScaleInfo(div);
         $$('select.scale', div)[0].onchange = onchange;
         $$('select.key-note', div)[0].onchange = onchange;
-        $$('button.remove-region', div)[0].onclick = () => div.remove();
+        $$('button.remove-region', div)[0].onclick = () => {
+            let regions = div.parentNode.children;
+            if (regions.length > 1) {
+                console.log(regions);
+                div.remove();
+            } else {
+                alert('There should be at least 1 region');
+            }
+        };
         $$('button.add-pitch-bend', div)[0].onclick = () => {
             addPitchBendNote($$('.pitch-bend-list', div)[0]);
         };
