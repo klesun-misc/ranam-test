@@ -467,6 +467,28 @@ org.klesun.RanamTest = function(form){
         onchange();
     };
 
+    let shouldDiffer = function(input, getExcluded)
+    {
+        input.onchange = function(e){
+            let min = input.min;
+            let max = input.max;
+            input.value = Math.min(input.value, max);
+            input.value = Math.max(input.value, min);
+            let oldValue = input.oldValue !== undefined ? input.oldValue : input.defaultValue;
+            let excluded = getExcluded();
+            if (input.value == excluded) {
+                let delta = +input.value - oldValue;
+                let nextValue = +input.value + delta;
+                if (nextValue >= min && nextValue <= max) {
+                    input.value = nextValue;
+                } else {
+                    input.value = oldValue;
+                }
+            }
+            input.oldValue = input.value;
+        };
+    };
+
     let main = function (){
         let currentSmf = null;
         gui.smfInput.onchange =
@@ -486,6 +508,8 @@ org.klesun.RanamTest = function(form){
                 }
                 let totalTicks = getTotalTicks(smf);
                 gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
+                gui.oudTrackNumInput.setAttribute('max', smf.tracks.length);
+                gui.tablaTrackNumInput.setAttribute('max', smf.tracks.length);
                 $$(':scope > div', gui.regionListCont)
                     .forEach(div => updateScaleTimeRanges(
                         div, smf.ticksPerBeat, totalTicks
@@ -513,6 +537,8 @@ org.klesun.RanamTest = function(form){
             initScale(cloned);
             gui.regionListCont.appendChild(cloned);
         };
+        shouldDiffer(gui.oudTrackNumInput, () => gui.tablaTrackNumInput.value);
+        shouldDiffer(gui.tablaTrackNumInput, () => gui.oudTrackNumInput.value);
     };
 
     main();
