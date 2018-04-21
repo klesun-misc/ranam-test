@@ -630,8 +630,8 @@ org.klesun.RanamTest = function(form){
                 }
                 let totalTicks = getTotalTicks(smf);
                 gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
-                gui.oudTrackNumInput.setAttribute('max', smf.tracks.length);
-                gui.tablaTrackNumInput.setAttribute('max', smf.tracks.length);
+                gui.oudTrackNumInput.setAttribute('max', smf.tracks.length - 1);
+                gui.tablaTrackNumInput.setAttribute('max', smf.tracks.length - 1);
                 $$(':scope > div', gui.regionListCont)
                     .forEach(div => updateScaleTimeRanges(
                         div, smf.ticksPerBeat, totalTicks
