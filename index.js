@@ -48,8 +48,9 @@ org.klesun.RanamTest = function(form){
         let isTablaTrack = trackNum == formParams.tablaTrackNum;
 
         if (readerEvent.type === 'MIDI') {
-            if (isOudTrack && readerEvent.midiEventType == 14) {
-                // Pitch Bend - we don't want pitch bends from
+            if (isOudTrack && [14,11,12].includes(readerEvent.midiEventType)) {
+                // 11 - control (bank) change, 12 - program change
+                // 14 - Pitch Bend - we don't want pitch bends from
                 // original song to mess up our pitch bends
                 return null;
             } else {
@@ -233,6 +234,10 @@ org.klesun.RanamTest = function(form){
             readerEvent.midiEventType == 9 && readerEvent.parameter2 == 0
         );
 
+    let isPitchBend = (readerEvent) =>
+        readerEvent.type === 'MIDI' &&
+        readerEvent.midiEventType == 14;
+
     let convertToArabicMidi = function(smfReader, formParams)
     {
         /** @debug */
@@ -246,7 +251,6 @@ org.klesun.RanamTest = function(form){
             let jsmidgenTrack = new Midi.Track();
 
             let isOudTrack = i == formParams.oudTrackNum;
-            let isTablaTrack = i == formParams.tablaTrackNum;
             if (isOudTrack) {
                 // add control change event and program change 123, bird tweet
                 makeOadEvents(0)
@@ -260,8 +264,6 @@ org.klesun.RanamTest = function(form){
                 timeTicks += readerEvent.delta;
                 let scales = scaleRegions.filter(s => s.from <= timeTicks && s.to > timeTicks);
                 let jsmidgenEvent = readerToJsmidgenEvent(readerEvent, formParams, i);
-                let isNoteEvent = readerEvent.type === 'MIDI' &&
-                    [8,9].includes(readerEvent.midiEventType);
                 if (isOudTrack && isNoteOn(readerEvent)) {
                     // Oud NOTE ON is about to fire - should set pitch bend
                     let semitones = readerEvent.parameter1;
@@ -379,6 +381,10 @@ org.klesun.RanamTest = function(form){
 
     let normalizeSmf = function(smfReader, params)
     {
+        let errors = [];
+        let warnings = [];
+        smfReader = JSON.parse(JSON.stringify(smfReader));
+
         let oudTrackNum = params.oudTrackNum;
         if (oudTrackNum > smfReader.tracks.length) {
             return 'Specified Oud track number ' + oudTrackNum + ' is outside of ' + smfReader.tracks.length + ' tracks range in the MIDI file';
@@ -398,18 +404,25 @@ org.klesun.RanamTest = function(form){
                     let semitones = event.parameter1;
                     openNotes.add(semitones);
                     if (semitones < 43 || semitones > 64) {
-                        return 'Notes in the Oud track (' + semitones + ') are outside of range (43-64) at index ' + i;
-                    } else if (openNotes.size > 1) {
-                        return 'Overlapping notes ' + [...openNotes].join(',') + ' at index ' + i;
+                        errors.push('Notes in the Oud track (' + semitones + ') are outside of range (43-64) at index ' + (i + j));
+                    }
+                    if (openNotes.size > 1) {
+                        errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at index ' + (i + j) + '. Please fix them and try again');
                     }
                 } else if (isNoteOff(event)) {
                     let semitones = event.parameter1;
                     openNotes.delete(semitones);
+                } else if (isPitchBend(event)) {
+                    warnings.push('Your MIDI has pitchbend already at index ' + (i + j) + '. Please remove them if you don’t want them');
                 }
             }
         }
         oudTrack.events = sortedEvents;
-        return null; // no errors
+        return {
+            errors: errors,
+            warnings: warnings,
+            smf: smfReader,
+        };
     };
 
     let updateScaleTimeRanges = function(div, ticketPerBeat, totalTicks)
@@ -599,6 +612,7 @@ org.klesun.RanamTest = function(form){
 
     let main = function (){
         let currentSmf = null;
+        gui.smfInput.onclick = (e) => { gui.smfInput.value = null; };
         gui.smfInput.onchange =
             (inputEvent) => loadSelectedFile(gui.smfInput.files[0],
             (smfBase64) => {
@@ -627,6 +641,7 @@ org.klesun.RanamTest = function(form){
                 currentSmf = smf;
                 gui.convertBtn.removeAttribute('disabled');
             });
+        gui.sf2Input.onclick = (e) => { gui.smfInput.value = null; };
         gui.sf2Input.onchange =
             (inputEvent) => loadSelectedFile(gui.sf2Input.files[0],
             (sf2Base64) => {
@@ -656,10 +671,13 @@ org.klesun.RanamTest = function(form){
         gui.convertBtn.onclick = () => {
             let params = collectParams(gui);
             let smfCopy = JSON.parse(JSON.stringify(currentSmf));
-            let error = normalizeSmf(smfCopy, params);
-            if (error) {
-                alert('Invalid MIDI file: ' + error);
+            let normalized = normalizeSmf(smfCopy, params);
+            if (normalized.errors.length > 0) {
+                alert('Invalid MIDI file: ' + normalized.errors.slice(0, 5).join('\n'));
             } else {
+                if (normalized.warnings.length > 0) {
+                    alert('Warning: ' + normalized.warnings.slice(0, 5).join('\n'));
+                }
                 let buff = convertToArabicMidi(smfCopy, params);
                 /** @debug */
                 console.log('Converted SMF', Ns.Libs.SMFreader(buff).tracks);
