@@ -38,32 +38,36 @@
                     <option>Notes</option>
                     <option>Ticks</option>
                 </select>
-                <span>From (Incl.): <input type="number" value="0" step="1" min="0" max="100" class="from"/></span>
-                <span>To (Excl.): <input type="number" value="0" step="1" min="0" max="100" class="to"/></span>
-                <span>Scale: <select class="scale">
-                    <option>Bayati</option>
-                    <option>Saba</option>
-                    <option>Sikah</option>
-                    <option>Rast</option>
-                    <option>Hijaz</option>
-                    <option>Nahawand</option>
-                    <option>Kurd</option>
-                    <option>Ajam</option>
-                    <option value="">---</option>
-                </select></span>
-                <span>Key Note: <select class="key-note">
-                    <option value="Do">C (Do)</option> <!-- 0 -->
-                    <option value="Re">D (Re)</option> <!-- 1 -->
-                    <option value="Mi">E (Mi)</option> <!-- 2 -->
-                    <option value="Fa">F (Fa)</option> <!-- 3 -->
-                    <option value="So">G (So)</option> <!-- 4 -->
-                    <option value="La">A (La)</option> <!-- 5 -->
-                    <option value="Si">B (Si)</option> <!-- 6 -->
-                </select></span>
-                <span class="no-pitch-bend-msg" style="display: none">no pitch bend</span>
+                <span title="Inclusive">From: <input type="number" value="0" step="1" min="0" max="100" class="from"/></span>
+                <span title="Exclusive">To: <input type="number" value="0" step="1" min="0" max="100" class="to"/></span>
                 <span>
-                    Pitch-bends:
-                    <button type="button" class="add-pitch-bend" onclick="alert('TODO: implement!');">Add</button>
+                    Scale:
+                    <select class="scale">
+                        <option>Bayati</option>
+                        <option>Saba</option>
+                        <option>Sikah</option>
+                        <option>Rast</option>
+                        <option>Hijaz</option>
+                        <option>Nahawand</option>
+                        <option>Kurd</option>
+                        <option>Ajam</option>
+                        <option value="">---</option>
+                    </select>
+                    <select class="key-note">
+                        <option value="Do">C (Do)</option> <!-- 0 -->
+                        <option value="Re">D (Re)</option> <!-- 1 -->
+                        <option value="Mi">E (Mi)</option> <!-- 2 -->
+                        <option value="Fa">F (Fa)</option> <!-- 3 -->
+                        <option value="So">G (So)</option> <!-- 4 -->
+                        <option value="La">A (La)</option> <!-- 5 -->
+                        <option value="Si">B (Si)</option> <!-- 6 -->
+                    </select>
+                </span>
+                <span style="margin: 6px;"> <!-- margin so that  panel did not change size when pitch bend blocks move -->
+                    <button type="button" class="add-pitch-bend" onclick="alert('TODO: implement!');">Add Pitch-bend</button>
+                </span>
+                <span>
+                    <span class="no-pitch-bend-msg" style="display: none">no pitch bend</span>
                     <span class="pitch-bend-list">
                         <span>
                             <select class="pitched-note">
