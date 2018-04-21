@@ -1,7 +1,5 @@
 
-var org = org || {};
-org.klesun = org.klesun || {};
-org.klesun.RanamTest = function(form){
+define(['require', 'exports'], (require, exports) => (form) => {
     "use strict";
     let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
 
@@ -707,4 +705,4 @@ org.klesun.RanamTest = function(form){
     };
 
     main();
-};
+});
