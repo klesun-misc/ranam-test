@@ -200,7 +200,6 @@ define([], () => (smfReader, formParams) => {
                     // original song got some notes in 10-th channel we reserve for Tabla
                     channel = 7; // close enough to 10
                 }
-                // NOTE ON/OFF
                 return new Midi.Event({
                     type: readerEvent.midiEventType * 16,
                     channel: channel,
@@ -229,6 +228,15 @@ define([], () => (smfReader, formParams) => {
         }
     };
 
+    let isInRegion = function(region, timeTicks, noteIdx)
+    {
+        if (region.fromToFormat === 'Notes') {
+            return region.from <= noteIdx && region.to > noteIdx;
+        } else {
+            return region.from <= timeTicks && region.to > timeTicks;
+        }
+    };
+
     let convertToArabicMidi = function(smfReader)
     {
         let jsmidgenTracks = [];
@@ -245,12 +253,14 @@ define([], () => (smfReader, formParams) => {
                     .forEach(e => jsmidgenTrack.addEvent(e));
             }
 
+            let noteIdx = -1;
             let timeTicks = 0;
             let scaleRegions = formParams.scaleRegions;
 
             for (let readerEvent of readerTrack.events) {
                 timeTicks += readerEvent.delta;
-                let scales = scaleRegions.filter(s => s.from <= timeTicks && s.to > timeTicks);
+                noteIdx += isNoteOn(readerEvent) ? 1 : 0;
+                let scales = scaleRegions.filter(s => isInRegion(s, timeTicks, noteIdx));
                 let jsmidgenEvent = readerToJsmidgenEvent(readerEvent, i);
                 if (isOudTrack && isNoteOn(readerEvent)) {
                     // Oud NOTE ON is about to fire - should set pitch bend

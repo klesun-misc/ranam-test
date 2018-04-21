@@ -32,8 +32,12 @@
                 <span>
                     <button type="button" class="remove-region">X</button>
                 </span>
-                <span>From (Incl.): <input type="number" value="0" step="384" min="0" max="38400" class="from"/></span>
-                <span>To (Excl.): <input type="number" value="0" step="384" min="0" max="38400" class="to"/></span>
+                <select class="from-to-format">
+                    <option>Notes</option>
+                    <option>Ticks</option>
+                </select>
+                <span>From (Incl.): <input type="number" value="0" step="1" min="0" max="100" class="from"/></span>
+                <span>To (Excl.): <input type="number" value="0" step="1" min="0" max="100" class="to"/></span>
                 <span>Scale: <select class="scale">
                     <option>Bayati</option>
                     <option>Saba</option>
@@ -95,7 +99,6 @@
 </form>
 
 <script>
-    console.log('zalupa');
     require(
         ['./index.js', './lib/FileSaver.js', './lib/SMFreader.js', './lib/jsmidgen.js', './lib/sf2-parser.js'],
         (RanamTest) => {

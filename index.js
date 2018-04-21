@@ -79,19 +79,22 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js'], (Sf2Adapter, ToRanam
 
     let numOrNull = val => val === '' ? null : +val;
 
+    let collectRegion = div => 1 && {
+        scale: $$('select.scale', div)[0].value,
+        startingNote: $$('select.key-note', div)[0].value,
+        fromToFormat: $$('select.from-to-format', div)[0].value,
+        from: $$('input.from', div)[0].value,
+        to: $$('input.to', div)[0].value,
+        pitchBends: $$('.pitch-bend-list > *', div)
+            .map(span => 1 && {
+                noteName: $$('select.pitched-note', span)[0].value,
+                pitchBend: $$('input.pitch-bend', span)[0].value,
+            }),
+    };
+
     let collectParams = (gui) => 1 && {
         scaleRegions: $$(':scope > *', gui.regionListCont)
-            .map(div => 1 && {
-                scale: $$('select.scale', div)[0].value,
-                startingNote: $$('select.key-note', div)[0].value,
-                from: $$('input.from', div)[0].value,
-                to: $$('input.to', div)[0].value,
-                pitchBends: $$('.pitch-bend-list > *', div)
-                    .map(span => 1 && {
-                        noteName: $$('select.pitched-note', span)[0].value,
-                        pitchBend: $$('input.pitch-bend', span)[0].value,
-                    }),
-            }),
+            .map(collectRegion),
         oudTrackNum: numOrNull(gui.oudTrackNumInput.value),
         tablaTrackNum: numOrNull(gui.tablaTrackNumInput.value),
         removeMeta: gui.removeMetaFlag.checked,
@@ -119,18 +122,49 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js'], (Sf2Adapter, ToRanam
         return Math.max(...ticksPerTrack);
     };
 
-    let updateScaleTimeRanges = function(div, ticketPerBeat, totalTicks)
+    let isNoteOn = (readerEvent) =>
+        readerEvent.type === 'MIDI' &&
+        readerEvent.midiEventType === 9 &&
+        readerEvent.parameter2 > 0;
+
+    let getTotalNotes = function(smfReader)
     {
-        $$('input.from', div).forEach(inp => {
-            inp.setAttribute('step', ticketPerBeat);
-            inp.setAttribute('max', totalTicks);
-            inp.value = 0;
-        });
-        $$('input.to', div).forEach(inp => {
-            inp.setAttribute('step', ticketPerBeat);
-            inp.setAttribute('max', totalTicks);
-            inp.value = totalTicks;
-        });
+        let notesPerTrack = smfReader.tracks
+            .map(t => t.events.filter(isNoteOn).length);
+        return Math.max(...notesPerTrack);
+    };
+
+    let updateScaleTimeRanges = function(div, ticksPerBeat, totalTicks, totalNotes)
+    {
+        let onchange = () => {
+            let fromProg = 0;
+            let toProg = 1;
+            let step = 1;
+            let max = 1;
+            let data = collectRegion(div);
+            if (data.fromToFormat === 'Notes') {
+                // last was Ticks
+                fromProg = data.from / totalTicks;
+                toProg = data.to / totalTicks;
+                step = 1;
+                max = totalNotes;
+            } else if (data.fromToFormat === 'Ticks') {
+                // last was Notes
+                fromProg = data.from / totalNotes;
+                toProg = data.to / totalNotes;
+                step = ticksPerBeat;
+                max = totalTicks;
+            }
+            $$('input.from', div)[0].setAttribute('step', step);
+            $$('input.from', div)[0].setAttribute('max', max);
+            $$('input.from', div)[0].value = Math.round(max * fromProg / step) * step;
+
+            $$('input.to', div)[0].setAttribute('step', step);
+            $$('input.to', div)[0].setAttribute('max', max);
+            $$('input.to', div)[0].value = Math.round(max * toProg / step) * step || max;
+        };
+        $$('select.from-to-format', div)[0].onchange = onchange;
+        onchange();
     };
 
     let getFractionChar = function(num)
@@ -276,14 +310,15 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js'], (Sf2Adapter, ToRanam
                     console.log('Parsed SMF track ', track);
                 }
                 let totalTicks = getTotalTicks(smf);
+                let totalNotes = getTotalNotes(smf);
                 gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
                 gui.oudTrackNumInput.setAttribute('max', smf.tracks.length - 1);
                 gui.tablaTrackNumInput.setAttribute('max', smf.tracks.length - 1);
                 $$(':scope > div', gui.regionListCont)
                     .forEach(div => updateScaleTimeRanges(
-                        div, smf.ticksPerBeat, totalTicks
+                        div, smf.ticksPerBeat, totalTicks, totalNotes
                     ));
-                updateScaleTimeRanges(gui.regionRef, smf.ticksPerBeat, totalTicks);
+                updateScaleTimeRanges(gui.regionRef, smf.ticksPerBeat, totalTicks, totalNotes);
 
                 currentSmf = smf;
                 gui.convertBtn.removeAttribute('disabled');
