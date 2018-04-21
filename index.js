@@ -109,6 +109,7 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js'], (Sf2Adapter, ToRanam
         pitchBendRef: $$('.pitch-bend-list > *', form)[0].cloneNode(true),
         currentTracks: $$('tbody.current-tracks', form)[0],
         addAnotherRegionBtn: $$('button.add-another-region', form)[0],
+        resetRegionsBtn: $$('button.reset-regions', form)[0],
         oudTrackNumInput: $$('input.oud-track-num', form)[0],
         tablaFlag: $$('input[type="checkbox"].tabla-flag', form)[0],
         tablaTrackNumInput: $$('input.tabla-track-num', form)[0],
@@ -291,6 +292,15 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js'], (Sf2Adapter, ToRanam
         };
     };
 
+    let changeAsUser = function(inputs, value)
+    {
+        for (let inp of inputs) {
+            inp.value = value;
+            let event = new Event('change');
+            inp.dispatchEvent(event);
+        }
+    };
+
     let main = function (){
         let currentSmf = null;
         gui.smfInput.onclick = (e) => { gui.smfInput.value = null; };
@@ -339,6 +349,18 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js'], (Sf2Adapter, ToRanam
             let cloned = gui.regionRef.cloneNode(true);
             initScale(cloned);
             gui.regionListCont.appendChild(cloned);
+        };
+        gui.resetRegionsBtn.onclick = () => {
+            $$(':scope > *', gui.regionListCont).slice(1)
+                .forEach(reg => reg.remove());
+            $$(':scope > *', gui.regionListCont)
+                .forEach(reg => {
+                    changeAsUser($$('select.from-to-format', reg), 'Notes');
+                    changeAsUser($$('input.from', reg), 0);
+                    changeAsUser($$('input.to', reg), $$('input.to', reg)[0].getAttribute('max'));
+                    changeAsUser($$('select.scale', reg), 'Bayati');
+                    changeAsUser($$('select.key-note', reg), 'Do');
+                });
         };
         shouldDiffer(gui.oudTrackNumInput, () => gui.tablaTrackNumInput.value);
         shouldDiffer(gui.tablaTrackNumInput, () => gui.oudTrackNumInput.value);
