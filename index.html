@@ -6,6 +6,7 @@
     <script src="./lib/FileSaver.js"></script>
     <script src="./lib/SMFreader.js"></script>
     <script src="./lib/jsmidgen.js"></script>
+    <script src="./lib/sf2-parser.js"></script>
 
 </head>
 <body>
@@ -89,10 +90,14 @@
             </div>
         </div>
     </div>
-    <label>Oud Track: <input type="number" value="1" min="0" max="0" step="1" class="oud-track-num"/></label><br/>
-    <label>Tabla Track: <input type="number" value="2" min="0" max="0" step="1" class="tabla-track-num"/></label><br/>
+    <label>Oud Track: <input type="number" value="0" min="0" max="0" step="1" class="oud-track-num"/></label><br/>
+    <label>Tabla Track: <input type="number" value="0" min="0" max="0" step="1" class="tabla-track-num"/></label><br/>
     <label>Remove All Meta Events: <input type="checkbox" class="remove-meta"/></label><br/>
     <button type="button" disabled="disabled" title="Upload General MIDI first!" class="convert-to-arabic">Convert to Ranam-format MIDI</button>
+    <div style="margin: 8px; padding-left: 8px; background-color: darkgrey;">
+        <h3>Playback (DEBUG)</h3>
+        <label>Soundfont .sf2 file: <input type="file" class="soundfont-file"/></label><br/>
+    </div>
 </form>
 
 <script>
