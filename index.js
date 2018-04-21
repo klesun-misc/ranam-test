@@ -44,8 +44,8 @@ org.klesun.RanamTest = function(form){
 
     let readerToJsmidgenEvent = function(readerEvent, formParams, trackNum)
     {
-        let isOudTrack = trackNum == formParams.oudTrackNum;
-        let isTablaTrack = trackNum == formParams.tablaTrackNum;
+        let isOudTrack = trackNum === formParams.oudTrackNum;
+        let isTablaTrack = trackNum === formParams.tablaTrackNum;
 
         if (readerEvent.type === 'MIDI') {
             if (isOudTrack && [14,11,12].includes(readerEvent.midiEventType)) {
@@ -57,13 +57,13 @@ org.klesun.RanamTest = function(form){
                 let channel = readerEvent.midiChannel;
                 if (isOudTrack) {
                     channel = 0;
-                } else if (channel == 0) {
+                } else if (channel === 0) {
                     // original song got some notes in 0-th channel we reserve for Oud
                     channel = 8; // 8 is big enough number, the channel is likely free
                 }
                 if (isTablaTrack) {
                     channel = 10;
-                } else if (channel == 10) {
+                } else if (channel === 10) {
                     // original song got some notes in 10-th channel we reserve for Tabla
                     channel = 7; // close enough to 10
                 }
@@ -80,7 +80,7 @@ org.klesun.RanamTest = function(form){
             if (formParams.removeMeta) {
                 // we wanna hear how will one song sound without tempo
                 return null;
-            } else if (readerEvent.metaType == 47) {
+            } else if (readerEvent.metaType === 47) {
                 // End Of Track message, will be added automatically by
                 // jsmidgen, so no need to dupe it, it causes problems
                 return null;
@@ -208,7 +208,7 @@ org.klesun.RanamTest = function(form){
             'b': -1,
             '': 0,
         }[sign];
-        return (semitone % 12) == (ivory + offset);
+        return (semitone % 12) === (ivory + offset);
     };
 
     let getOudPitchBend = function(semitone, scales)
@@ -225,18 +225,18 @@ org.klesun.RanamTest = function(form){
 
     let isNoteOn = (readerEvent) =>
         readerEvent.type === 'MIDI' &&
-        readerEvent.midiEventType == 9 &&
+        readerEvent.midiEventType === 9 &&
         readerEvent.parameter2 > 0;
 
     let isNoteOff = (readerEvent) =>
         readerEvent.type === 'MIDI' && (
-            readerEvent.midiEventType == 8 ||
-            readerEvent.midiEventType == 9 && readerEvent.parameter2 == 0
+            readerEvent.midiEventType === 8 ||
+            readerEvent.midiEventType === 9 && readerEvent.parameter2 === 0
         );
 
     let isPitchBend = (readerEvent) =>
         readerEvent.type === 'MIDI' &&
-        readerEvent.midiEventType == 14;
+        readerEvent.midiEventType === 14;
 
     let convertToArabicMidi = function(smfReader, formParams)
     {
@@ -250,7 +250,7 @@ org.klesun.RanamTest = function(form){
             let readerTrack = smfReader.tracks[i];
             let jsmidgenTrack = new Midi.Track();
 
-            let isOudTrack = i == formParams.oudTrackNum;
+            let isOudTrack = i === formParams.oudTrackNum;
             if (isOudTrack) {
                 // add control change event and program change 123, bird tweet
                 makeOadEvents(0)
@@ -302,6 +302,8 @@ org.klesun.RanamTest = function(form){
         return buf;
     };
 
+    let numOrNull = val => val === '' ? null : +val;
+
     let collectParams = (gui) => 1 && {
         scaleRegions: $$(':scope > *', gui.regionListCont)
             .map(div => 1 && {
@@ -315,8 +317,8 @@ org.klesun.RanamTest = function(form){
                         pitchBend: $$('input.pitch-bend', span)[0].value,
                     }),
             }),
-        oudTrackNum: gui.oudTrackNumInput.value,
-        tablaTrackNum: gui.tablaTrackNumInput.value,
+        oudTrackNum: numOrNull(gui.oudTrackNumInput.value),
+        tablaTrackNum: numOrNull(gui.tablaTrackNumInput.value),
         removeMeta: gui.removeMetaFlag.checked,
     };
 
@@ -330,6 +332,7 @@ org.klesun.RanamTest = function(form){
         currentTracks: $$('tbody.current-tracks', form)[0],
         addAnotherRegionBtn: $$('button.add-another-region', form)[0],
         oudTrackNumInput: $$('input.oud-track-num', form)[0],
+        tablaFlag: $$('input[type="checkbox"].tabla-flag', form)[0],
         tablaTrackNumInput: $$('input.tabla-track-num', form)[0],
         convertBtn: $$('button.convert-to-arabic', form)[0],
         removeMetaFlag: $$('input.remove-meta', form)[0],
@@ -347,7 +350,7 @@ org.klesun.RanamTest = function(form){
         let taken = [];
         for (let i = startOffset; i < events.length; ++i) {
             let event = events[i];
-            if (i === startOffset || event.delta == 0) {
+            if (i === startOffset || event.delta === 0) {
                 taken.push(event);
             } else {
                 break;
@@ -550,7 +553,7 @@ org.klesun.RanamTest = function(form){
             input.value = Math.max(input.value, min);
             let oldValue = input.oldValue !== undefined ? input.oldValue : input.defaultValue;
             let excluded = getExcluded();
-            if (input.value == excluded) {
+            if (input.value === excluded) {
                 let delta = +input.value - oldValue;
                 let nextValue = +input.value + delta;
                 if (nextValue >= min && nextValue <= max) {
@@ -692,6 +695,15 @@ org.klesun.RanamTest = function(form){
         };
         shouldDiffer(gui.oudTrackNumInput, () => gui.tablaTrackNumInput.value);
         shouldDiffer(gui.tablaTrackNumInput, () => gui.oudTrackNumInput.value);
+        gui.tablaFlag.onchange = () => {
+            if (gui.tablaFlag.checked) {
+                gui.tablaTrackNumInput.removeAttribute('disabled');
+            } else {
+                gui.tablaTrackNumInput.setAttribute('disabled', 'disabled');
+                gui.tablaTrackNumInput.value = '';
+            }
+        };
+        gui.tablaFlag.onchange();
     };
 
     main();
