@@ -385,6 +385,7 @@ org.klesun.RanamTest = function(form){
         }
         let oudTrack = smfReader.tracks[oudTrackNum];
 
+        let openNotes = new Set();
         let sortedEvents = [];
         for (let i = 0; i < oudTrack.events.length; ++i) {
             let tickEvents = takeTickEvents(oudTrack.events, i);
@@ -395,9 +396,15 @@ org.klesun.RanamTest = function(form){
                 let event = oudTrack.events[i];
                 if (isNoteOn(event)) {
                     let semitones = event.parameter1;
+                    openNotes.add(semitones);
                     if (semitones < 43 || semitones > 64) {
                         return 'Notes in the Oud track (' + semitones + ') are outside of range (43-64) at index ' + i;
+                    } else if (openNotes.size > 1) {
+                        return 'Overlapping notes ' + [...openNotes].join(',') + ' at index ' + i;
                     }
+                } else if (isNoteOff(event)) {
+                    let semitones = event.parameter1;
+                    openNotes.delete(semitones);
                 }
             }
         }
