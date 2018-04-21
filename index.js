@@ -128,22 +128,19 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js'], (Sf2Adapter, ToRanam
 
     let updateScaleTimeRanges = function(div, ticksPerBeat, totalTicks, totalNotes)
     {
+        let formatSelect = $$('select.from-to-format', div)[0];
         let onchange = () => {
-            let fromProg = 0;
-            let toProg = 1;
             let step = 1;
             let max = 1;
             let data = collectRegion(div);
+
+            let fromProg = data.from / $$('input.from', div)[0].getAttribute('max');
+            let toProg = data.to / $$('input.to', div)[0].getAttribute('max');
+
             if (data.fromToFormat === 'Notes') {
-                // last was Ticks
-                fromProg = data.from / totalTicks;
-                toProg = data.to / totalTicks;
                 step = 1;
                 max = totalNotes;
             } else if (data.fromToFormat === 'Ticks') {
-                // last was Notes
-                fromProg = data.from / totalNotes;
-                toProg = data.to / totalNotes;
                 step = ticksPerBeat;
                 max = totalTicks;
             }
@@ -155,7 +152,7 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js'], (Sf2Adapter, ToRanam
             $$('input.to', div)[0].setAttribute('max', max);
             $$('input.to', div)[0].value = Math.round(max * toProg / step) * step || max;
         };
-        $$('select.from-to-format', div)[0].onchange = onchange;
+        formatSelect.onchange = onchange;
         onchange();
     };
 
