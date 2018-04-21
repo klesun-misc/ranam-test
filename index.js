@@ -222,7 +222,18 @@ org.klesun.RanamTest = function(form){
         return null;
     };
 
-    let smfReaderToBuff = function(smfReader, formParams)
+    let isNoteOn = (readerEvent) =>
+        readerEvent.type === 'MIDI' &&
+        readerEvent.midiEventType == 9 &&
+        readerEvent.parameter2 > 0;
+
+    let isNoteOff = (readerEvent) =>
+        readerEvent.type === 'MIDI' && (
+            readerEvent.midiEventType == 8 ||
+            readerEvent.midiEventType == 9 && readerEvent.parameter2 == 0
+        );
+
+    let convertToArabicMidi = function(smfReader, formParams)
     {
         /** @debug */
         console.log(formParams);
@@ -251,8 +262,7 @@ org.klesun.RanamTest = function(form){
                 let jsmidgenEvent = readerToJsmidgenEvent(readerEvent, formParams, i);
                 let isNoteEvent = readerEvent.type === 'MIDI' &&
                     [8,9].includes(readerEvent.midiEventType);
-                let isNoteOn = readerEvent.midiEventType == 9 && readerEvent.parameter2 > 0;
-                if (isOudTrack && isNoteOn) {
+                if (isOudTrack && isNoteOn(readerEvent)) {
                     // Oud NOTE ON is about to fire - should set pitch bend
                     let semitones = readerEvent.parameter1;
                     let koef = getOudPitchBend(semitones, scales);
@@ -264,7 +274,7 @@ org.klesun.RanamTest = function(form){
                 if (jsmidgenEvent) {
                     jsmidgenTrack.addEvent(jsmidgenEvent);
                 }
-                if (isOudTrack && isNoteEvent && !isNoteOn) {
+                if (isOudTrack && isNoteOff(readerEvent)) {
                     // Oud NOTE OFF just fired, should reset pitch bend
                     let semitones = readerEvent.parameter1;
                     if (pitchBendNotes.has(semitones)) {
@@ -329,7 +339,45 @@ org.klesun.RanamTest = function(form){
         return Math.max(...ticksPerTrack);
     };
 
-    let validateSmf = function(smfReader, params)
+    /** take events that happen at current tick */
+    let takeTickEvents = function(events, startOffset)
+    {
+        let taken = [];
+        for (let i = startOffset; i < events.length; ++i) {
+            let event = events[i];
+            if (i === startOffset || event.delta == 0) {
+                taken.push(event);
+            } else {
+                break;
+            }
+        }
+        return taken;
+    };
+
+    /**
+     * make sure NOTE OFF is always before NOTE ON so we
+     * could put PITCH BEND before NOTE ON but after NOTE OFF
+     */
+    let sortTickEvents = function(events)
+    {
+        // only first has not 0 delta, it should be reassigned
+        // to the event that will become first after sort
+        let delta = events[0].delta;
+        events = events.sort((a,b) => {
+            if (isNoteOn(a) && isNoteOff(b)) {
+                return 1;
+            } else if (isNoteOff(a) && isNoteOn(b)) {
+                return -1;
+            } else {
+                return 0;
+            }
+        });
+        events.forEach(e => e.delta = 0);
+        events[0].delta = delta;
+        return events;
+    };
+
+    let normalizeSmf = function(smfReader, params)
     {
         let oudTrackNum = params.oudTrackNum;
         if (oudTrackNum > smfReader.tracks.length) {
@@ -337,16 +385,23 @@ org.klesun.RanamTest = function(form){
         }
         let oudTrack = smfReader.tracks[oudTrackNum];
 
+        let sortedEvents = [];
         for (let i = 0; i < oudTrack.events.length; ++i) {
-            let event = oudTrack.events[i];
-            if (event.type === 'MIDI' && event.midiEventType == 9) { // NOTE ON
-                let semitones = event.parameter1;
-                if (semitones < 43 || semitones > 64) {
-                    return 'Notes in the Oud track (' + semitones + ') are outside of range (43-64) at index ' + i;
+            let tickEvents = takeTickEvents(oudTrack.events, i);
+            i += tickEvents.length - 1;
+            tickEvents = sortTickEvents(tickEvents);
+            sortedEvents.push(...tickEvents);
+            for (let j = 0; j < tickEvents.length; ++j) {
+                let event = oudTrack.events[i];
+                if (isNoteOn(event)) {
+                    let semitones = event.parameter1;
+                    if (semitones < 43 || semitones > 64) {
+                        return 'Notes in the Oud track (' + semitones + ') are outside of range (43-64) at index ' + i;
+                    }
                 }
             }
         }
-
+        oudTrack.events = sortedEvents;
         return null; // no errors
     };
 
@@ -593,11 +648,12 @@ org.klesun.RanamTest = function(form){
             });
         gui.convertBtn.onclick = () => {
             let params = collectParams(gui);
-            let error = validateSmf(currentSmf, params);
+            let smfCopy = JSON.parse(JSON.stringify(currentSmf));
+            let error = normalizeSmf(smfCopy, params);
             if (error) {
                 alert('Invalid MIDI file: ' + error);
             } else {
-                let buff = smfReaderToBuff(currentSmf, params);
+                let buff = convertToArabicMidi(smfCopy, params);
                 /** @debug */
                 console.log('Converted SMF', Ns.Libs.SMFreader(buff).tracks);
                 saveMidiToDisc(buff);
