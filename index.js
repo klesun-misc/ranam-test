@@ -4,17 +4,6 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js'], (Sf2Adapter, ToRanam
     "use strict";
     let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
 
-    // http://stackoverflow.com/a/21797381/2750743
-    let _base64ToArrayBuffer = function(base64)
-    {
-        var binary_string =  atob(base64);
-
-        return new Uint8Array(binary_string.length)
-            .fill(0)
-            .map((_, i) => binary_string.charCodeAt(i))
-            .buffer;
-    };
-
     let loadSelectedFile = function(fileInfo, whenLoaded)
     {
         if (!fileInfo) {
@@ -23,9 +12,10 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js'], (Sf2Adapter, ToRanam
         }
 
         let reader = new FileReader();
-        reader.readAsDataURL(fileInfo);
+        // reader.readAsDataURL(fileInfo);
+        reader.readAsArrayBuffer(fileInfo);
         reader.onload = (e) => {
-            whenLoaded(e.target.result.split(',')[1]);
+            whenLoaded(e.target.result);
         }
     };
 
@@ -115,6 +105,7 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js'], (Sf2Adapter, ToRanam
         tablaTrackNumInput: $$('input.tabla-track-num', form)[0],
         convertBtn: $$('button.convert-to-arabic', form)[0],
         removeMetaFlag: $$('input.remove-meta', form)[0],
+        soundfontLoadingImg: $$('img.soundfont-loading', form)[0],
     };
 
     let getTotalTicks = function(smfReader)
@@ -306,8 +297,7 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js'], (Sf2Adapter, ToRanam
         gui.smfInput.onclick = (e) => { gui.smfInput.value = null; };
         gui.smfInput.onchange =
             (inputEvent) => loadSelectedFile(gui.smfInput.files[0],
-            (smfBase64) => {
-                let smfBuf = _base64ToArrayBuffer(smfBase64);
+            (smfBuf) => {
                 let smf = Ns.Libs.SMFreader(smfBuf);
                 gui.currentTracks.innerHTML = '';
                 for (let i = 0; i < smf.tracks.length; ++i) {
@@ -335,11 +325,13 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js'], (Sf2Adapter, ToRanam
             });
         gui.sf2Input.onclick = (e) => { gui.smfInput.value = null; };
         gui.sf2Input.onchange =
-            (inputEvent) => loadSelectedFile(gui.sf2Input.files[0],
-            (sf2Base64) => {
-                let sf2Buf = _base64ToArrayBuffer(sf2Base64);
-                Sf2Adapter(sf2Buf);
-            });
+            (inputEvent) => {
+                gui.soundfontLoadingImg.style.display = 'inline-block';
+                loadSelectedFile(gui.sf2Input.files[0], (sf2Buf) => {
+                    gui.soundfontLoadingImg.style.display = 'none';
+                    Sf2Adapter(sf2Buf);
+                });
+            };
         gui.convertBtn.onclick = () => {
             let params = collectParams(gui);
             ToRanamFormat(currentSmf, params);

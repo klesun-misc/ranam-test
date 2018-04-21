@@ -26,8 +26,7 @@ define([], () => (sf2Buf) => {
      */
     let sf2ToWav = function(sf2Sample, sampleInfo)
     {
-        let sampleValues = [...sf2Sample];
-        let size = sampleValues.length * 2 + 44; // 44 - RIFF header data
+        let size = sf2Sample.length * 2 + 44; // 44 - RIFF header data
         let wavBuf = new ArrayBuffer(size);
         let view = new DataView(wavBuf);
 
@@ -50,9 +49,10 @@ define([], () => (sf2Buf) => {
         view.setInt16(32, blockAlign, true);
         view.setInt16(34, bitsPerSample, true);
         view.setInt32(36, 0x64617461, false); // data
-        view.setInt32(40, sampleValues.length, true);
-        for (let i = 0; i < sampleValues.length; ++i) {
-            view.setInt16(44 + i * 2, sampleValues[i], true);
+        view.setInt32(40, sf2Sample.length, true);
+
+        for (let i = 0; i < sf2Sample.length; ++i) {
+            view.setInt16(44 + i * 2, sf2Sample[i], true);
         }
 
         return wavBuf;
