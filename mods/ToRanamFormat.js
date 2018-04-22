@@ -82,17 +82,17 @@ define([], () => (smfReader, formParams) => {
             for (let j = 0; j < tickEvents.length; ++j) {
                 let event = oudTrack.events[i];
                 if (isNoteOn(event)) {
-                    let semitones = event.parameter1;
-                    openNotes.add(semitones);
-                    if (semitones < 43 || semitones > 64) {
-                        errors.push('Notes in the Oud track (' + semitones + ') are outside of range (43-64) at index ' + (i + j));
+                    let semitone = event.parameter1;
+                    openNotes.add(semitone);
+                    if (semitone < 43 || semitone > 64) {
+                        errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at index ' + (i + j));
                     }
                     if (openNotes.size > 1) {
                         errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at index ' + (i + j) + '. Please fix them and try again');
                     }
                 } else if (isNoteOff(event)) {
-                    let semitones = event.parameter1;
-                    openNotes.delete(semitones);
+                    let semitone = event.parameter1;
+                    openNotes.delete(semitone);
                 } else if (isPitchBend(event)) {
                     warnings.push('Your MIDI has pitchbend already at index ' + (i + j) + '. Please remove them if you don’t want them');
                 }
@@ -132,10 +132,10 @@ define([], () => (smfReader, formParams) => {
     };
 
     /** @param {float} absolute koef [-1 ... +1].
-     * multiply by current bend range to get the shift in semitones
+     * multiply by current bend range to get the shift in semitone
      * examples if bend radius is set to 2
-     * makePitchBend(1.75, 0) will highen pitch 2 * 1.75 = 3.5 semitones for zeroth channel
-     * makePitchBend(-1.01, 4) will lower pitch 2 * 1.01 = 2.02 semitones for fourth channel */
+     * makePitchBend(1.75, 0) will highen pitch 2 * 1.75 = 3.5 semitone for zeroth channel
+     * makePitchBend(-1.01, 4) will lower pitch 2 * 1.01 = 2.02 semitone for fourth channel */
     let makePitchBend = function(koef, channel)
     {
         let intvalue = Math.round(16383 / 2 * (koef + 1));
@@ -264,11 +264,11 @@ define([], () => (smfReader, formParams) => {
                 let jsmidgenEvent = readerToJsmidgenEvent(readerEvent, i);
                 if (isOudTrack && isNoteOn(readerEvent)) {
                     // Oud NOTE ON is about to fire - should set pitch bend
-                    let semitones = readerEvent.parameter1;
-                    let koef = getOudPitchBend(semitones, scales);
+                    let semitone = readerEvent.parameter1;
+                    let koef = getOudPitchBend(semitone, scales);
                     if (koef) {
                         jsmidgenTrack.addEvent(makePitchBend(koef, readerEvent.midiChannel));
-                        pitchBendNotes.add(semitones);
+                        pitchBendNotes.add(semitone);
                     }
                 }
                 if (jsmidgenEvent) {
@@ -276,10 +276,10 @@ define([], () => (smfReader, formParams) => {
                 }
                 if (isOudTrack && isNoteOff(readerEvent)) {
                     // Oud NOTE OFF just fired, should reset pitch bend
-                    let semitones = readerEvent.parameter1;
-                    if (pitchBendNotes.has(semitones)) {
+                    let semitone = readerEvent.parameter1;
+                    if (pitchBendNotes.has(semitone)) {
                         jsmidgenTrack.addEvent(makePitchBend(0, readerEvent.midiChannel));
-                        pitchBendNotes.delete(semitones);
+                        pitchBendNotes.delete(semitone);
                     }
                 }
             }
