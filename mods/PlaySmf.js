@@ -1,16 +1,5 @@
 
-define([], () => (smfReader, sf2Adapter) => {
-
-    let isNoteOn = (readerEvent) =>
-        readerEvent.type === 'MIDI' &&
-        readerEvent.midiEventType === 9 &&
-        readerEvent.parameter2 > 0;
-
-    let isNoteOff = (readerEvent) =>
-        readerEvent.type === 'MIDI' && (
-            readerEvent.midiEventType === 8 ||
-            readerEvent.midiEventType === 9 && readerEvent.parameter2 === 0
-        );
+define([], () => (smfReader, sf2Adapter, synth) => {
 
     /** do setTimeout() or do on this thread if time is zero */
     let timeoutAsap = (millis, callback) => {
@@ -33,19 +22,12 @@ define([], () => (smfReader, sf2Adapter) => {
     let ticksPerChord = Object.keys(ticksToEvents)
         .sort((a,b) => a - b);
     let tempo = 120; // TODO: take from SMF
-    let preset = 25; // TODO: take from SMF
-    let bank = 20; // TODO: take from SMF
     let stopped = false;
-    let pitchToSources = {};
     let chordIndex = -1;
     let startTime = window.performance.now();
     let playNext = () => {
         if (stopped) {
-            for (let [semitone, sources] of Object.entries(pitchToSources)) {
-                for (let source of sources) {
-                    source.stop();
-                }
-            }
+            synth.stopAll();
         } else if (++chordIndex < ticksPerChord.length) {
             let ticks = ticksPerChord[chordIndex];
             let academic = ticks / smfReader.ticksPerBeat / 4;
@@ -53,26 +35,10 @@ define([], () => (smfReader, sf2Adapter) => {
             let timeSkip = startTime + nextTime - window.performance.now();
             timeoutAsap(timeSkip, () => {
                 for (let event of ticksToEvents[ticks]) {
-                    if (isNoteOn(event)) {
-                        let semitone = event.parameter1;
-                        let velocity = event.parameter2;
-                        let params = {bank, preset, semitone, velocity};
-                        sf2Adapter.getSampleData(params, (samples) => {
-                            if (samples.length === 0) {
-                                console.error('No sample in the bank: ' + bank + ' ' + preset + ' ' + semitone);
-                            }
-                            samples.forEach(sampleData => {
-                                let audioSource = sampleData.audioSource;
-                                audioSource.start();
-                                pitchToSources[semitone] = pitchToSources[semitone] || [];
-                                pitchToSources[semitone].push(audioSource);
-                            });
-                        })
-                    } else if (isNoteOff(event)) {
-                        let sources = pitchToSources[event.parameter1] || [];
-                        for (let source of sources) {
-                            source.stop();
-                        }
+                    if (event.type === 'MIDI') {
+                        synth.handleMidiEvent(event);
+                    } else {
+                        // handle tempo and other stuff
                     }
                 }
                 playNext();
@@ -81,13 +47,9 @@ define([], () => (smfReader, sf2Adapter) => {
             // finished
         }
     };
-    let paramSets = smfReader.tracks.reduce(
-        (all, track) => all.concat(track.events.filter(isNoteOn).reduce(
-        (all, event) => all.concat([{
-            bank: bank, preset: preset,
-            semitone: event.parameter1,
-            velocity: event.parameter2,
-        }]), [])), []);
-    sf2Adapter.preloadSamples(paramSets, playNext);
+    smfReader.tracks.forEach(t => t.events
+        .filter(e => e.type === 'MIDI')
+        .forEach(e => synth.handleMidiEvent(e, true)));
+    sf2Adapter.onIdle(playNext);
     return () => stopped = true;
 });

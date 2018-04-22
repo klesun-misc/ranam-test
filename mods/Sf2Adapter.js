@@ -263,7 +263,8 @@ define([], () => (sf2Buf, audioCtx) => {
             let pzone_end_idx = pres_idx + 1 < root.presetHeader.length
                 ? root.presetHeader[pres_idx + 1].presetBagIndex
                 : root.presetZone.length; // -1 ?
-            let extendKeyRanges = pres.bank === 0; // no for drums, since they are not pitchable
+            // let extendKeyRanges = pres.bank === 0; // no for drums, since they are not pitchable
+            let extendKeyRanges = true;
             let propertyBundles = range(pzone_start_idx, pzone_end_idx)
                 .map(pzone_idx => {
                     let gen_start_idx = root.presetZone[pzone_idx].presetGeneratorIndex;
@@ -335,44 +336,42 @@ define([], () => (sf2Buf, audioCtx) => {
         return delta * 100 + fineTune + coarseTune;
     };
 
+    /** sample num -> array of funcs to call when it is fetched */
+    let awaiting = {};
+    let onIdles = [];
+
     let getSampleAudio = function(sampleNumber, then) {
         if (sampleToAudio[sampleNumber]) {
             then(sampleToAudio[sampleNumber]);
         } else {
-            let sampleInfo = root.sampleHeader[sampleNumber];
-            let sampleBuf = root.sample[sampleNumber];
-            let wavBuf = sf2ToWav(sampleBuf, sampleInfo);
-            audioCtx.decodeAudioData(wavBuf, (decoded) => {
-                sampleToAudio[sampleNumber] = decoded;
-                then(sampleToAudio[sampleNumber]);
-            }, console.error);
+            if (awaiting[sampleNumber]) {
+                awaiting[sampleNumber].push(then);
+            } else {
+                awaiting[sampleNumber] = [then];
+                let sampleInfo = root.sampleHeader[sampleNumber];
+                let sampleBuf = root.sample[sampleNumber];
+                let wavBuf = sf2ToWav(sampleBuf, sampleInfo);
+                audioCtx.decodeAudioData(wavBuf, (decoded) => {
+                    awaiting[sampleNumber].forEach(a => a(decoded));
+                    delete awaiting[sampleNumber];
+                    sampleToAudio[sampleNumber] = decoded;
+                    if (Object.keys(awaiting).length === 0) {
+                        onIdles.forEach(handler => handler());
+                        onIdles = [];
+                    }
+                }, console.error);
+            }
         }
     };
 
-    let preloadSamples = function(paramSets, then)
-    {
-        let samples = [].concat(paramSets.map(filterSamples));
-        let numbers = new Set(...samples.map(s => s.sampleNumber));
-        if (numbers.size === 0) return then();
-        let progress = 0;
-        let reportProgress = () => {
-            if (progress === numbers.size) {
-                then();
-            }
-        };
-        let seen = new Set();
-        samples.forEach(({sam, gen, sampleNumber}) => {
-            if (!seen.has(sampleNumber)) {
-                seen.add(sampleNumber);
-                getSampleAudio(sampleNumber, wavBuf => {
-                    ++progress;
-                    reportProgress();
-                });
-            }
-        });
+    let onIdle = function(callback) {
+        console.debug('awaiting', awaiting);
+        if (Object.keys(awaiting).length === 0) {
+            callback();
+        } else {
+            onIdles.push(callback);
+        }
     };
-
-    let MAX_VOLUME = 0.10;
 
     /** @param db - soundfont decibel value */
     let dBtoKoef = (db) => Math.pow(10, db/50); // yes, it is 50, not 10 and not 20 - see /tests/attenToPercents.txt
@@ -397,19 +396,15 @@ define([], () => (sf2Buf, audioCtx) => {
             let genVolumeKoef = isNull(gen.initialAttenuation) ? 1 :
                 dBtoKoef(-gen.initialAttenuation / 10);
             getSampleAudio(sampleNumber, decoded => {
-                let audioSource = audioCtx.createBufferSource();
-                let gainNode = audioCtx.createGain();
-                gainNode.gain.value = MAX_VOLUME * genVolumeKoef * params.velocity / 127;
-                audioSource.buffer = decoded;
-                audioSource.playbackRate.value = freqFactor;
-                audioSource.loopStart = (sam.startLoop + (gen.startloopAddrsOffset || 0)) / sam.sampleRate;
-                audioSource.loopEnd = (sam.startLoop + (gen.endloopAddrsOffset || 0)) / sam.sampleRate;
-                audioSource.loop = gen === 1;
-                gainNode.connect(audioCtx.destination);
-                audioSource.connect(gainNode);
                 sources.push({
-                    freqFactor: freqFactor,
-                    audioSource: audioSource,
+                    buffer: decoded,
+                    frequencyFactor: freqFactor,
+                    isLooped: gen.sampleModes === 1,
+                    loopStart: (sam.startLoop + (gen.startloopAddrsOffset || 0)) / sam.sampleRate,
+                    loopEnd: (sam.startLoop + (gen.endloopAddrsOffset || 0)) / sam.sampleRate,
+                    stereoPan: sam.sampleType,
+                    volumeKoef: genVolumeKoef * params.velocity / 127,
+                    fadeMillis: 100, // TODO: ...
                 });
                 reportAnother();
             });
@@ -418,6 +413,6 @@ define([], () => (sf2Buf, audioCtx) => {
 
     return {
         getSampleData: getSampleData,
-        preloadSamples: preloadSamples,
+        onIdle: onIdle,
     };
 });

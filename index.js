@@ -1,5 +1,5 @@
 
-define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js'], (Sf2Adapter, ToRanamFormat, PlaySmf) => {
+define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', './mods/Synth.js'], (Sf2Adapter, ToRanamFormat, PlaySmf, Synth) => {
     return (form) => {
 
         "use strict";
@@ -18,6 +18,12 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js'],
             reader.onload = (e) => {
                 whenLoaded(e.target.result);
             }
+        };
+
+        let saveMidiToDisc = function(buff)
+        {
+            let blob = new Blob([buff], {type: "midi/binary"});
+            saveAs(blob, 'ranam_song.mid', true);
         };
 
         let scaleMapping = {
@@ -132,6 +138,7 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js'],
             removeMetaFlag: $$('input.remove-meta', form)[0],
             soundfontLoadingImg: $$('img.soundfont-loading', form)[0],
             playInputBtn: $$('button.play-input', form)[0],
+            playOutputBtn: $$('button.play-output', form)[0],
         };
 
         let getTotalTicks = function (smfReader) {
@@ -347,19 +354,38 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js'],
                     loadSelectedFile(gui.sf2Input.files[0], (sf2Buf) => {
                         gui.soundfontLoadingImg.style.display = 'none';
                         let adapter = Sf2Adapter(sf2Buf, audioCtx);
+                        let synth = Synth(audioCtx, adapter);
                         gui.playInputBtn.onclick = () => {
                             if (!currentSmf) {
                                 alert('MIDI file not loaded');
                             } else {
-                                let stop = PlaySmf(currentSmf, adapter);
+                                let stop = PlaySmf(currentSmf, adapter, synth);
                                 setTimeout(stop, 15000);
+                            }
+                        };
+                        gui.playOutputBtn.onclick = () => {
+                            if (!currentSmf) {
+                                alert('MIDI file not loaded');
+                            } else {
+                                let params = collectParams(gui);
+                                let buff = ToRanamFormat(currentSmf, params);
+                                if (buff) {
+                                    let parsed = Ns.Libs.SMFreader(buff);
+                                    let stop = PlaySmf(parsed, adapter, synth);
+                                    setTimeout(stop, 15000);
+                                }
                             }
                         };
                     });
                 };
             gui.convertBtn.onclick = () => {
                 let params = collectParams(gui);
-                ToRanamFormat(currentSmf, params);
+                let buff = ToRanamFormat(currentSmf, params);
+                if (buff) {
+                    /** @debug */
+                    console.log('Converted SMF', Ns.Libs.SMFreader(buff).tracks);
+                    saveMidiToDisc(buff);
+                }
             };
             initScale($$(':scope > *', gui.regionListCont)[0]);
             gui.addAnotherRegionBtn.onclick = () => {

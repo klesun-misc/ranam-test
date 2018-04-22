@@ -76,6 +76,7 @@ define([], () => (smfReader, formParams) => {
         let sortedEvents = [];
         for (let i = 0; i < oudTrack.events.length; ++i) {
             let tickEvents = takeTickEvents(oudTrack.events, i);
+            let chordStart = i;
             i += tickEvents.length - 1;
             tickEvents = sortTickEvents(tickEvents);
             sortedEvents.push(...tickEvents);
@@ -85,16 +86,17 @@ define([], () => (smfReader, formParams) => {
                     let semitone = event.parameter1;
                     openNotes.add(semitone);
                     if (semitone < 43 || semitone > 64) {
-                        errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at index ' + (i + j));
+                        errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at index ' + (chordStart + j));
                     }
                     if (openNotes.size > 1) {
-                        errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at index ' + (i + j) + '. Please fix them and try again');
+                        console.error('overlap', openNotes, i, j, event, oudTrack.events);
+                        errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at index ' + (chordStart + j) + '. Please fix them and try again');
                     }
                 } else if (isNoteOff(event)) {
                     let semitone = event.parameter1;
                     openNotes.delete(semitone);
                 } else if (isPitchBend(event)) {
-                    warnings.push('Your MIDI has pitchbend already at index ' + (i + j) + '. Please remove them if you don’t want them');
+                    warnings.push('Your MIDI has pitchbend already at index ' + (chordStart + j) + '. Please remove them if you don’t want them');
                 }
             }
         }
@@ -181,10 +183,23 @@ define([], () => (smfReader, formParams) => {
         let isTablaTrack = trackNum === formParams.tablaTrackNum;
 
         if (readerEvent.type === 'MIDI') {
-            if (isOudTrack && [14,11,12].includes(readerEvent.midiEventType)) {
-                // 11 - control (bank) change, 12 - program change
-                // 14 - Pitch Bend - we don't want pitch bends from
-                // original song to mess up our pitch bends
+            let skip = false;
+            if (isOudTrack) {
+                if ([14,12].includes(readerEvent.midiEventType)) {
+                    // 12 - program change, 14 - Pitch Bend
+                    skip = true;
+                } else if (readerEvent.midiEventType === 11) {
+                    // control change event
+                    if ([0,32].includes(readerEvent.parameter1)) {
+                        // bank change, me must ensure Ranam bank for Oud
+                        skip = true;
+                    } else if ([100, 101].includes(readerEvent.parameter1)) {
+                        // multi-message event, includes among other, pitch-bend range change
+                        skip = true;
+                    }
+                }
+            }
+            if (skip) {
                 return null;
             } else {
                 let channel = readerEvent.midiChannel;
@@ -306,12 +321,6 @@ define([], () => (smfReader, formParams) => {
         return buf;
     };
 
-    let saveMidiToDisc = function(buff)
-    {
-        let blob = new Blob([buff], {type: "midi/binary"});
-        saveAs(blob, 'ranam_song.mid', true);
-    };
-
     let main = function()
     {
         /** @debug */
@@ -320,16 +329,14 @@ define([], () => (smfReader, formParams) => {
         let normalized = normalizeSmf();
         if (normalized.errors.length > 0) {
             alert('Invalid MIDI file: ' + normalized.errors.slice(0, 5).join('\n'));
+            return null;
         } else {
             if (normalized.warnings.length > 0) {
                 alert('Warning: ' + normalized.warnings.slice(0, 5).join('\n'));
             }
-            let buff = convertToArabicMidi(normalized.smf);
-            /** @debug */
-            console.log('Converted SMF', Ns.Libs.SMFreader(buff).tracks);
-            saveMidiToDisc(buff);
+            return convertToArabicMidi(normalized.smf);
         }
     };
 
-    main();
+    return main();
 });
