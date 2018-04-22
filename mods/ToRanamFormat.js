@@ -256,8 +256,11 @@ define([], () => (smfReader, formParams) => {
             let noteIdx = -1;
             let timeTicks = 0;
             let scaleRegions = formParams.scaleRegions;
+            let addToNext = 0; // we skip some messages, but delta should remain
 
             for (let readerEvent of readerTrack.events) {
+                readerEvent = Object.assign({}, readerEvent);
+                readerEvent.delta += addToNext;
                 timeTicks += readerEvent.delta;
                 noteIdx += isNoteOn(readerEvent) ? 1 : 0;
                 let scales = scaleRegions.filter(s => isInRegion(s, timeTicks, noteIdx));
@@ -273,6 +276,9 @@ define([], () => (smfReader, formParams) => {
                 }
                 if (jsmidgenEvent) {
                     jsmidgenTrack.addEvent(jsmidgenEvent);
+                    addToNext = 0;
+                } else {
+                    addToNext = readerEvent.delta;
                 }
                 if (isOudTrack && isNoteOff(readerEvent)) {
                     // Oud NOTE OFF just fired, should reset pitch bend
