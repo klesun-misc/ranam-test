@@ -80,7 +80,7 @@ define([], () => (smfReader, formParams) => {
             tickEvents = sortTickEvents(tickEvents);
             sortedEvents.push(...tickEvents);
             for (let j = 0; j < tickEvents.length; ++j) {
-                let event = oudTrack.events[i];
+                let event = tickEvents[j];
                 if (isNoteOn(event)) {
                     let semitone = event.parameter1;
                     openNotes.add(semitone);
