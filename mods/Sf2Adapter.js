@@ -28,12 +28,6 @@ define([], () => (sf2Buf, audioCtx) => {
     /** @debug */
     console.log('sf2 flat: ', root);
 
-    let saveWavToDisc = function(buff)
-    {
-        let blob = new Blob([buff], {type: "midi/binary"});
-        saveAs(blob, 'sample.wav', true);
-    };
-
     /**
      * @param {Int16Array} sf2Sample
      * @param {ISampleInfo} sampleInfo
@@ -365,7 +359,6 @@ define([], () => (sf2Buf, audioCtx) => {
     };
 
     let onIdle = function(callback) {
-        console.debug('awaiting', awaiting);
         if (Object.keys(awaiting).length === 0) {
             callback();
         } else {

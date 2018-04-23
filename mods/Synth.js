@@ -29,6 +29,7 @@ define([], () => (audioCtx, sf2Adapter) => {
     });
 
     let channels = range(0, 16).map(i => 1 && {
+        bank: 0,
         preset: 0,
         pitchBend: 0,
         volume: 1,
@@ -105,9 +106,12 @@ define([], () => (audioCtx, sf2Adapter) => {
         } else if (isNoteOff(event)) {
             let audios = pitchToAudios[event.parameter1] || [];
             audios.forEach(release);
+            pitchToAudios[event.parameter1] = [];
         } else if (midiEventType === 14) { // pitch bend
             let pitchBend = (parameter1 + parameter2 << 7) * 2 / 16383 - 1;
             setPitchBend(pitchBend, midiChannel);
+        //} else if () {
+
         } else {
             // unhandled event
         }
@@ -117,6 +121,7 @@ define([], () => (audioCtx, sf2Adapter) => {
         for (let [semitone, audios] of Object.entries(pitchToAudios)) {
             audios.forEach(release);
         }
+        pitchToAudios = {};
     };
 
     return {
