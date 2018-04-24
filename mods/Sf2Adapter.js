@@ -59,7 +59,7 @@ define([], () => (sf2Buf, audioCtx) => {
         view.setInt16(32, blockAlign, true);
         view.setInt16(34, bitsPerSample, true);
         view.setInt32(36, 0x64617461, false); // data
-        view.setInt32(40, sf2Sample.length, true);
+        view.setInt32(40, sf2Sample.length * 2, true);
 
         for (let i = 0; i < sf2Sample.length; ++i) {
             view.setInt16(44 + i * 2, sf2Sample[i], true);
@@ -321,7 +321,7 @@ define([], () => (sf2Buf, audioCtx) => {
                     gen: g,
                     sampleNumber: s.sampleNumber,
                 }))
-            .reduce((a,b) => a.concat(b));
+            .reduce((a,b) => a.concat(b), []);
     };
 
     let determineCorrectionCents = (delta, generator) => {
@@ -334,6 +334,12 @@ define([], () => (sf2Buf, audioCtx) => {
     let awaiting = {};
     let onIdles = [];
 
+    let saveWavToDisc = function(buff, fileName = 'sample')
+    {
+        let blob = new Blob([buff], {type: "wav/binary"});
+        saveAs(blob, fileName + '.wav', true);
+    };
+
     let getSampleAudio = function(sampleNumber, then) {
         if (sampleToAudio[sampleNumber]) {
             then(sampleToAudio[sampleNumber]);
@@ -345,6 +351,7 @@ define([], () => (sf2Buf, audioCtx) => {
                 let sampleInfo = root.sampleHeader[sampleNumber];
                 let sampleBuf = root.sample[sampleNumber];
                 let wavBuf = sf2ToWav(sampleBuf, sampleInfo);
+
                 audioCtx.decodeAudioData(wavBuf, (decoded) => {
                     awaiting[sampleNumber].forEach(a => a(decoded));
                     delete awaiting[sampleNumber];
@@ -394,7 +401,7 @@ define([], () => (sf2Buf, audioCtx) => {
                     frequencyFactor: freqFactor,
                     isLooped: gen.sampleModes === 1,
                     loopStart: (sam.startLoop + (gen.startloopAddrsOffset || 0)) / sam.sampleRate,
-                    loopEnd: (sam.startLoop + (gen.endloopAddrsOffset || 0)) / sam.sampleRate,
+                    loopEnd: (sam.endLoop + (gen.endloopAddrsOffset || 0)) / sam.sampleRate,
                     stereoPan: sam.sampleType,
                     volumeKoef: genVolumeKoef * params.velocity / 127,
                     fadeMillis: 100, // TODO: ...

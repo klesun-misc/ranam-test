@@ -19,53 +19,60 @@ define([], () => (audioCtx, sf2Adapter) => {
 
     let range = (l, r) => new Array(r - l).fill(0).map((_, i) => l + i);
 
-    let chanToPressed = range(0, 16).map(i => new Set([]));
-
-    let channelNodes = range(0, 16).map(i => {
+    let makeChanGain = () => {
         let node = audioCtx.createGain();
         node.gain.value = 1;
         node.connect(audioCtx.destination);
         return node;
-    });
+    };
 
     let channels = range(0, 16).map(i => 1 && {
         bank: 0,
         preset: 0,
         pitchBend: 0,
         volume: 1,
-        pressedNotes: new Set(),
+        gainNode: makeChanGain(),
+        pressedNotes: [],
     });
 
-    let semitoneToFactor = (s) => Math.pow(2, s / 12);
+    let toneToFactor = (s) => Math.pow(2, 2 * s / 12);
 
     let setPitchBend = (pitchBend, chan) => {
         channels[chan].pitchBend = pitchBend;
-        chanToPressed[chan].forEach(s => s.src.playbackRate.value = s.baseFrequency * semitoneToFactor(pitchBend));
+        channels[chan].pressedNotes.forEach(s => s.audioSource.playbackRate.value = s.baseFrequency * toneToFactor(pitchBend));
     };
 
     let setVolume = (factor, chan) => {
         channels[chan].volume = factor;
-        chanToPressed[chan].forEach(s => s.gain.gain.value = s.baseVolume * Math.max(factor, 0.0001));
+        channels[chan].gainNode.gain.value = factor;
     };
 
     let MAX_VOLUME = 0.10;
-    let pitchToAudios = {};
 
-    let press = function(sampleData) {
-        let audioSource = audioCtx.createBufferSource();
+    let press = function(sampleData, channel) {
         let gainNode = audioCtx.createGain();
-        gainNode.gain.value = MAX_VOLUME * sampleData.volumeKoef;
+        let panNode = audioCtx.createStereoPanner();
+        let audioSource = audioCtx.createBufferSource();
+
+        let baseVolume = MAX_VOLUME * sampleData.volumeKoef;
+        let baseFrequency = sampleData.frequencyFactor;
+        gainNode.gain.value = baseVolume;
         audioSource.buffer = sampleData.buffer;
-        audioSource.playbackRate.value = sampleData.frequencyFactor;
+        audioSource.playbackRate.value = baseFrequency * toneToFactor(channel.pitchBend);
         audioSource.loopStart = sampleData.loopStart;
         audioSource.loopEnd = sampleData.loopEnd;
         audioSource.loop = sampleData.isLooped;
+
         gainNode.connect(audioCtx.destination);
-        audioSource.connect(gainNode);
+        panNode.connect(gainNode);
+        audioSource.connect(panNode);
+
         audioSource.start();
         return {
             audioSource: audioSource,
             gainNode: gainNode,
+            baseVolume: baseVolume,
+            baseFrequency: sampleData.frequencyFactor,
             fadeMillis: sampleData.fadeMillis,
         };
     };
@@ -86,42 +93,57 @@ define([], () => (audioCtx, sf2Adapter) => {
 
     let handleMidiEvent = function(event, preloadOnly = false) {
         let {midiEventType, midiChannel, parameter1, parameter2} = event;
-        /** @debug */
-        let preset = 25; // TODO: take from SMF
-        let bank = 20; // TODO: take from SMF
+        let channel = channels[midiChannel];
         if (isNoteOn(event)) {
-            let semitone = parameter1;
-            let velocity = parameter2;
-            let params = {bank, preset, semitone, velocity};
+            let params = {
+                semitone: parameter1, bank: channel.bank,
+                velocity: parameter2, preset: channel.preset,
+            };
+            /** @debug, dunno why, but bank/program are different in sf2 from what we set in the converter */
+            if (midiChannel === 0) { // Ranam Oud
+                params.bank = 20;
+                params.preset = 25;
+            } else if (midiChannel === 10) { // Ranam Tabla
+                params.bank = 0;
+                params.preset = 0;
+            } else if (midiChannel === 9) {
+                // drum track
+                params.bank = 128;
+            }
             sf2Adapter.getSampleData(params, (samples) => {
                 if (samples.length === 0) {
-                    console.error('No sample in the bank: ' + bank + ' ' + preset + ' ' + semitone);
+                    console.error('No sample in the bank: ' + channel.bank + ' ' + channel.preset + ' ' + parameter1);
                 } else if (!preloadOnly) {
                     samples.forEach(sampleData => {
-                        pitchToAudios[semitone] = pitchToAudios[semitone] || [];
-                        pitchToAudios[semitone].push(press(sampleData));
+                        channel.pressedNotes.push(press(sampleData, channel));
                     });
                 }
             })
         } else if (isNoteOff(event)) {
-            let audios = pitchToAudios[event.parameter1] || [];
-            audios.forEach(release);
-            pitchToAudios[event.parameter1] = [];
+            channels[midiChannel].pressedNotes.forEach(release);
+            channels[midiChannel].pressedNotes = [];
         } else if (midiEventType === 14) { // pitch bend
-            let pitchBend = (parameter1 + parameter2 << 7) * 2 / 16383 - 1;
+            let pitchBend = (parameter1 + parameter2 << 7) * 2 / 16384 - 1;
             setPitchBend(pitchBend, midiChannel);
-        //} else if () {
-
+        } else if (midiEventType === 12) { // program change
+            channel.preset = parameter1;
+        } else if (midiEventType === 11) { // control change
+            if (parameter1 === 0) { // bank change
+                channel.bank = parameter2;
+            } else if (parameter1 === 1) { // volume
+                let factor = parameter2 / 127;
+                //setVolume(factor);
+            }
         } else {
             // unhandled event
         }
     };
 
     let stopAll = function() {
-        for (let [semitone, audios] of Object.entries(pitchToAudios)) {
-            audios.forEach(release);
+        for (let channel of channels) {
+            channel.pressedNotes.forEach(release);
+            channel.pressedNotes = [];
         }
-        pitchToAudios = {};
     };
 
     return {

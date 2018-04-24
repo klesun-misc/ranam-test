@@ -321,6 +321,7 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', 
                 (inputEvent) => loadSelectedFile(gui.smfInput.files[0],
                     (smfBuf) => {
                         let smf = Ns.Libs.SMFreader(smfBuf);
+                        console.log('Parsed SMF', smf);
                         gui.currentTracks.innerHTML = '';
                         for (let i = 0; i < smf.tracks.length; ++i) {
                             let track = smf.tracks[i];
@@ -329,7 +330,6 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', 
                                 '<td>' + (track.trackName || '') + '</td>' +
                                 '<td>' + track.events.length + '</td>' +
                                 '</tr>';
-                            console.log('Parsed SMF track ', track);
                         }
                         let totalTicks = getTotalTicks(smf);
                         let totalNotes = getTotalNotes(smf);
