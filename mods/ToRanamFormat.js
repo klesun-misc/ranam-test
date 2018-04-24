@@ -89,7 +89,6 @@ define([], () => (smfReader, formParams) => {
                         errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at index ' + (chordStart + j));
                     }
                     if (openNotes.size > 1) {
-                        console.error('overlap', openNotes, i, j, event, oudTrack.events);
                         errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at index ' + (chordStart + j) + '. Please fix them and try again');
                     }
                 } else if (isNoteOff(event)) {

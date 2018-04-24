@@ -98,8 +98,6 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', 
             Ajam: {},
         };
 
-        let numOrNull = val => val === '' ? null : +val;
-
         let collectRegion = div => 1 && {
             scale: $$('select.scale', div)[0].value,
             startingNote: $$('select.key-note', div)[0].value,
@@ -114,10 +112,9 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', 
         };
 
         let collectParams = (gui) => 1 && {
-            scaleRegions: $$(':scope > *', gui.regionListCont)
-                .map(collectRegion),
-            oudTrackNum: numOrNull(gui.oudTrackNumInput.value),
-            tablaTrackNum: numOrNull(gui.tablaTrackNumInput.value),
+            scaleRegions: $$(':scope > *', gui.regionListCont).map(collectRegion),
+            oudTrackNum: $$('[name="isOudTrack"]:checked', gui.currentTracks).map(r => +r.value)[0],
+            tablaTrackNum: $$('[name="isTablaTrack"]:checked', gui.currentTracks).map(r => +r.value || null)[0],
             removeMeta: gui.removeMetaFlag.checked,
         };
 
@@ -125,15 +122,13 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', 
             smfInput: $$('input[type="file"].midi-file', form)[0],
             sf2Input: $$('input[type="file"].soundfont-file', form)[0],
             ticksPerBeatHolder: $$('.ticks-per-beat', form)[0],
+            currentTracks: $$('tbody.current-tracks', form)[0],
+            trackTrRef: $$('.current-tracks tr')[0].cloneNode(true),
             regionListCont: $$('.region-list', form)[0],
             regionRef: $$('.region-list > *', form)[0].cloneNode(true),
             pitchBendRef: $$('.pitch-bend-list > *', form)[0].cloneNode(true),
-            currentTracks: $$('tbody.current-tracks', form)[0],
             addAnotherRegionBtn: $$('button.add-another-region', form)[0],
             resetRegionsBtn: $$('button.reset-regions', form)[0],
-            oudTrackNumInput: $$('input.oud-track-num', form)[0],
-            tablaFlag: $$('input[type="checkbox"].tabla-flag', form)[0],
-            tablaTrackNumInput: $$('input.tabla-track-num', form)[0],
             convertBtn: $$('button.convert-to-arabic', form)[0],
             removeMetaFlag: $$('input.remove-meta', form)[0],
             soundfontLoadingImg: $$('img.soundfont-loading', form)[0],
@@ -283,33 +278,69 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', 
             onchange();
         };
 
-        let shouldDiffer = function (input, getExcluded) {
-            input.onchange = function (e) {
-                let min = input.min;
-                let max = input.max;
-                input.value = Math.min(input.value, max);
-                input.value = Math.max(input.value, min);
-                let oldValue = input.oldValue !== undefined ? input.oldValue : input.defaultValue;
-                let excluded = getExcluded();
-                if (input.value === excluded) {
-                    let delta = +input.value - oldValue;
-                    let nextValue = +input.value + delta;
-                    if (nextValue >= min && nextValue <= max) {
-                        input.value = nextValue;
-                    } else {
-                        input.value = oldValue;
-                    }
-                }
-                input.oldValue = input.value;
-            };
-        };
-
         let changeAsUser = function (inputs, value) {
             for (let inp of inputs) {
                 inp.value = value;
                 let event = new Event('change');
                 inp.dispatchEvent(event);
             }
+        };
+
+        let populateSmfGui = function(smf)
+        {
+            gui.currentTracks.innerHTML = '';
+            let oudTrackNum = smf.tracks.length > 1 ? 1 : 0;
+            let onlyOne = () => {
+                $$(':scope > tr.real', gui.currentTracks)
+                    .forEach(tr => {
+                        let occupied = $$('input[type="radio"]:checked', tr).length > 0;
+                        $$('input[type="radio"]:not(:checked)', tr).forEach(radio => {
+                            if (occupied) {
+                                radio.setAttribute('disabled', 'disabled');
+                            } else {
+                                radio.removeAttribute('disabled');
+                            }
+                        });
+                    });
+            };
+            for (let i = 0; i < smf.tracks.length; ++i) {
+                let track = smf.tracks[i];
+                let tr = gui.trackTrRef.cloneNode(true);
+                tr.classList.add('real');
+                $$('.holder.track-number', tr)[0].innerHTML = i;
+                $$('.holder.track-name', tr)[0].innerHTML = track.trackName || '';
+                $$('.holder.event-cnt', tr)[0].innerHTML = track.events.length;
+                let oudRadio = $$('input[name="isOudTrack"]', tr)[0];
+                let tablaRadio = $$('input[name="isTablaTrack"]', tr)[0];
+                oudRadio.value = i;
+                tablaRadio.value = i;
+                oudRadio.onchange = onlyOne;
+                tablaRadio.onchange = onlyOne;
+                $$('button.play-track', tr)[0].onclick = () => {
+                    alert('Coming soon!');
+                };
+                if (i === oudTrackNum) {
+                    $$('input[name="isOudTrack"]', tr)[0].checked = true;
+                    $$('input[name="isTablaTrack"]', tr)[0].setAttribute('disabled', 'disabled');
+                }
+                gui.currentTracks.appendChild(tr);
+            }
+            let noneTr = gui.trackTrRef.cloneNode(true);
+            $$('.holder.track-number', noneTr)[0].innerHTML = 'None';
+            $$('input[name="isTablaTrack"]', noneTr)[0].checked = true;
+            $$('input[name="isTablaTrack"]', noneTr)[0].onchange = onlyOne;
+            $$('input[name="isOudTrack"]', noneTr)[0].remove();
+            $$('button.play-track', noneTr)[0].remove();
+            gui.currentTracks.appendChild(noneTr);
+
+            let totalTicks = getTotalTicks(smf);
+            let totalNotes = getTotalNotes(smf);
+            gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
+            $$(':scope > div', gui.regionListCont)
+                .forEach(div => updateScaleTimeRanges(
+                    div, smf.ticksPerBeat, totalTicks, totalNotes
+                ));
+            updateScaleTimeRanges(gui.regionRef, smf.ticksPerBeat, totalTicks, totalNotes);
         };
 
         let main = function () {
@@ -319,32 +350,13 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', 
             };
             gui.smfInput.onchange =
                 (inputEvent) => loadSelectedFile(gui.smfInput.files[0],
-                    (smfBuf) => {
-                        let smf = Ns.Libs.SMFreader(smfBuf);
-                        console.log('Parsed SMF', smf);
-                        gui.currentTracks.innerHTML = '';
-                        for (let i = 0; i < smf.tracks.length; ++i) {
-                            let track = smf.tracks[i];
-                            gui.currentTracks.innerHTML += '<tr>' +
-                                '<td>' + i + '</td>' +
-                                '<td>' + (track.trackName || '') + '</td>' +
-                                '<td>' + track.events.length + '</td>' +
-                                '</tr>';
-                        }
-                        let totalTicks = getTotalTicks(smf);
-                        let totalNotes = getTotalNotes(smf);
-                        gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
-                        gui.oudTrackNumInput.setAttribute('max', smf.tracks.length - 1);
-                        gui.tablaTrackNumInput.setAttribute('max', smf.tracks.length - 1);
-                        $$(':scope > div', gui.regionListCont)
-                            .forEach(div => updateScaleTimeRanges(
-                                div, smf.ticksPerBeat, totalTicks, totalNotes
-                            ));
-                        updateScaleTimeRanges(gui.regionRef, smf.ticksPerBeat, totalTicks, totalNotes);
-
-                        currentSmf = smf;
-                        gui.convertBtn.removeAttribute('disabled');
-                    });
+                (smfBuf) => {
+                    let smf = Ns.Libs.SMFreader(smfBuf);
+                    console.log('Parsed SMF', smf);
+                    populateSmfGui(smf);
+                    currentSmf = smf;
+                    gui.convertBtn.removeAttribute('disabled');
+                });
             gui.sf2Input.onclick = (e) => {
                 gui.smfInput.value = null;
             };
@@ -405,18 +417,6 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', 
                         changeAsUser($$('select.key-note', reg), 'Do');
                     });
             };
-            shouldDiffer(gui.oudTrackNumInput, () => gui.tablaTrackNumInput.value);
-            shouldDiffer(gui.tablaTrackNumInput, () => gui.oudTrackNumInput.value);
-
-            gui.tablaFlag.onchange = () => {
-                if (gui.tablaFlag.checked) {
-                    gui.tablaTrackNumInput.removeAttribute('disabled');
-                } else {
-                    gui.tablaTrackNumInput.setAttribute('disabled', 'disabled');
-                    gui.tablaTrackNumInput.value = '';
-                }
-            };
-            gui.tablaFlag.onchange();
         };
 
         main();
