@@ -121,17 +121,17 @@ define([], () => (sf2Buf, audioCtx) => {
                 flatFont[bankN][presetN] = [];
                 let preset = presets[presetN];
                 for (let presetInstrument of preset.instruments) {
-                    let sampleByName = {};
+                    let sampleByNum = {};
                     for (let instrumentSample of presetInstrument.info.samples) {
-                        let name = instrumentSample.info.sampleName;
-                        sampleByName[name] = sampleByName[name] || {
+                        let num = instrumentSample.sampleNumber;
+                        sampleByNum[num] = sampleByNum[num] || {
                             sampleNumber: instrumentSample.sampleNumber,
                             info: instrumentSample.info,
                             generators: [],
                         };
                         for (let iGen of presetInstrument.generators) {
                             for (let sGen of instrumentSample.generators) {
-                                sampleByName[name].generators.push(combineGenerators(
+                                sampleByNum[num].generators.push(combineGenerators(
                                     updateGenerator(preset.generatorApplyToAll || {}, iGen),
                                     updateGenerator(presetInstrument.info.generatorApplyToAll, sGen)
                                 ));
@@ -139,11 +139,11 @@ define([], () => (sf2Buf, audioCtx) => {
                         }
                     }
 
-                    for (let name in sampleByName) {
+                    for (let num in sampleByNum) {
                         flatFont[bankN][presetN].push({
-                            sampleNumber: sampleByName[name].sampleNumber,
-                            sampleInfo: sampleByName[name].info,
-                            generators: sampleByName[name].generators,
+                            sampleNumber: sampleByNum[num].sampleNumber,
+                            sampleInfo: sampleByNum[num].info,
+                            generators: sampleByNum[num].generators,
                         });
                     }
                 }
@@ -172,10 +172,10 @@ define([], () => (sf2Buf, audioCtx) => {
      */
     let fillBorders = function(generators)
     {
-        if (generators.filter(g => isNull(g.keyRange)).length > 0) {
+        // if (generators.filter(g => isNull(g.keyRange)).length > 0) {
             // there are generators that are not limited by key range
             return;
-        }
+        // }
 
         let lo = 127;
         let loGens = [];

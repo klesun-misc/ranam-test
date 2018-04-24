@@ -152,7 +152,7 @@ define([], () => (smfReader, formParams) => {
         });
     };
 
-    let makeOadEvents = function(channel) {
+    let makeOudEvents = function(channel) {
         return [
             new Midi.Event({
                 type: Midi.Event.CONTROLLER,
@@ -264,7 +264,7 @@ define([], () => (smfReader, formParams) => {
             let isOudTrack = i === formParams.oudTrackNum;
             if (isOudTrack) {
                 // add control change event and program change 123, bird tweet
-                makeOadEvents(0)
+                makeOudEvents(0)
                     .forEach(e => jsmidgenTrack.addEvent(e));
             }
 
