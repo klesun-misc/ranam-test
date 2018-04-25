@@ -214,11 +214,15 @@ define([], () => (smfReader, formParams) => {
                     // original song got some notes in 10-th channel we reserve for Tabla
                     channel = 7; // close enough to 10
                 }
+                let parameter2 = readerEvent.parameter2;
+                if (isNoteOn(readerEvent)) {
+                    parameter2 *= formParams.configTracks[trackNum].volume / 100;
+                }
                 return new Midi.Event({
                     type: readerEvent.midiEventType * 16,
                     channel: channel,
                     param1: readerEvent.parameter1,
-                    param2: readerEvent.parameter2,
+                    param2: parameter2,
                     time: readerEvent.delta,
                 });
             }

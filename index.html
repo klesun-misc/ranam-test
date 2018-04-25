@@ -10,10 +10,12 @@
 <p>It adds a quarter-tone pitch-bend on some regions defined by user. The note that gets pitch-bended depends on Scale</p>
 
 <form id="midi-file-params">
-    <label>MIDI file: <input required="required" type="file" class="midi-file"/></label><br/>
+    <label>MIDI file: <input required="required" type="file" class="midi-file" accept=".mid"/></label><br/>
     <fieldset class="needs-smf" disabled="disabled" title="Load MIDI file first!">
         <div style="margin: 8px;">
-            <label>Current MIDI File:</label><br/>
+            <label>Current MIDI File:</label>
+            <button class="play-input" type="button" onclick="alert('Load soundfont first')">Play original</button>
+            <br/>
             <label>♩ = <span class="ticks-per-beat">?</span> ticks</label><br/>
             <table>
                 <thead>
@@ -23,6 +25,7 @@
                         <th>Events</th>
                         <th>Oud</th>
                         <th>Tabla</th>
+                        <th>Volume</th>
                         <th>Play</th>
                     </tr>
                 </thead>
@@ -33,6 +36,7 @@
                         <td class="holder event-cnt"></td>
                         <td><input type="radio" name="isOudTrack" value=""/></td>
                         <td><input type="radio" name="isTablaTrack" value=""/></td>
+                        <td><input type="number" class="track-volume" value="100" min="0" max="100" step="10" style="width: 44px"/>%</td>
                         <td><button type="button" class="play-track" onclick="alert('Load MIDI file first!');">Play</button></td>
                     </tr>
                 </tbody>
@@ -109,14 +113,15 @@
             </div>
         </div>
         <label>Remove All Meta Events: <input type="checkbox" class="remove-meta"/></label><br/>
-        <button type="button" title="Upload General MIDI first!" class="convert-to-arabic">Convert to Ranam-format MIDI</button>
+        <label>Convert to Ranam format:
+            <button class="play-output" type="button" onclick="alert('Load soundfont first')">Play converted</button>
+            <button type="button" title="Upload General MIDI first!" class="convert-to-arabic">Save converted .mid</button>
+        </label>
     </fieldset>
     <div style="margin: 8px; padding-left: 8px; background-color: darkgrey;">
         <h3>Playback (DEBUG)</h3>
         <p class="sf2-http-status" style="color: yellow;">Loading .sf2 via HTTP... (~60 MiB)</p>
-        <label>Custom soundfont .sf2 file: <input type="file" class="soundfont-file"/></label>
-        <button class="play-input" type="button" onclick="alert('Load soundfont first')">Play input</button>
-        <button class="play-output" type="button" onclick="alert('Load soundfont first')">Play output</button>
+        <label>Custom soundfont .sf2 file: <input type="file" class="soundfont-file" accept=".sf2"/></label>
         <img class="soundfont-loading" src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Loading_icon.gif" style="display: none;"/>
     </div>
 </form>

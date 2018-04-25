@@ -124,19 +124,12 @@
                 }),
         };
 
-        let collectParams = (gui) => 1 && {
-            scaleRegions: $$(':scope > *', gui.regionListCont).map(collectRegion),
-            oudTrackNum: $$('[name="isOudTrack"]:checked', gui.currentTracks).map(r => +r.value)[0],
-            tablaTrackNum: $$('[name="isTablaTrack"]:checked', gui.currentTracks).map(r => +r.value || null)[0],
-            removeMeta: gui.removeMetaFlag.checked,
-        };
-
         let gui = {
             smfInput: $$('input[type="file"].midi-file', form)[0],
             sf2Input: $$('input[type="file"].soundfont-file', form)[0],
             smfFieldSet: $$('fieldset.needs-smf', form)[0],
             ticksPerBeatHolder: $$('.ticks-per-beat', form)[0],
-            currentTracks: $$('tbody.current-tracks', form)[0],
+            trackList: $$('tbody.current-tracks', form)[0],
             trackTrRef: $$('.current-tracks tr')[0].cloneNode(true),
             regionListCont: $$('.region-list', form)[0],
             regionRef: $$('.region-list > *', form)[0].cloneNode(true),
@@ -148,6 +141,16 @@
             soundfontLoadingImg: $$('img.soundfont-loading', form)[0],
             playInputBtn: $$('button.play-input', form)[0],
             playOutputBtn: $$('button.play-output', form)[0],
+        };
+
+        let collectParams = (gui) => 1 && {
+            scaleRegions: $$(':scope > *', gui.regionListCont).map(collectRegion),
+            oudTrackNum: $$('[name="isOudTrack"]:checked', gui.trackList).map(r => +r.value)[0],
+            tablaTrackNum: $$('[name="isTablaTrack"]:checked', gui.trackList).map(r => +r.value || null)[0],
+            configTracks: $$(':scope > tr.real', gui.trackList).map((t,i) => 1 && {
+                volume: $$('input.track-volume', t)[0].value,
+            }),
+            removeMeta: gui.removeMetaFlag.checked,
         };
 
         let getTotalTicks = function (events) {
@@ -350,12 +353,12 @@
         };
 
         let populateSmfGui = function(smf) {
-            gui.currentTracks.innerHTML = '';
+            gui.trackList.innerHTML = '';
             gui.smfFieldSet.removeAttribute('disabled');
             gui.smfFieldSet.removeAttribute('title');
             let oudTrackNum = smf.tracks.length > 1 ? 1 : 0;
             let onlyOne = () => {
-                $$(':scope > tr.real', gui.currentTracks)
+                $$(':scope > tr.real', gui.trackList)
                     .forEach(tr => {
                         let occupied = $$('input[type="radio"]:checked', tr).length > 0;
                         $$('input[type="radio"]:not(:checked)', tr).forEach(radio => {
@@ -389,7 +392,7 @@
                     $$('input[name="isOudTrack"]', tr)[0].checked = true;
                     $$('input[name="isTablaTrack"]', tr)[0].setAttribute('disabled', 'disabled');
                 }
-                gui.currentTracks.appendChild(tr);
+                gui.trackList.appendChild(tr);
             }
             let noneTr = gui.trackTrRef.cloneNode(true);
             $$('.holder.track-number', noneTr)[0].innerHTML = 'None';
@@ -397,7 +400,7 @@
             $$('input[name="isTablaTrack"]', noneTr)[0].onchange = onlyOne;
             $$('input[name="isOudTrack"]', noneTr)[0].remove();
             $$('button.play-track', noneTr)[0].remove();
-            gui.currentTracks.appendChild(noneTr);
+            gui.trackList.appendChild(noneTr);
 
             gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
             $$(':scope > div', gui.regionListCont)
