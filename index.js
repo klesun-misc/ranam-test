@@ -5,10 +5,12 @@
     klesun.requires('./mods/ToRanamFormat.js').then = (ToRanamFormat) =>
     klesun.requires('./mods/PlaySmf.js').then = (PlaySmf) =>
     klesun.requires('./mods/Synth.js').then = (Synth) =>
+    klesun.requires('./mods/Tls.js').then = (Tls) =>
     klesun.whenLoaded = () => (form) => {
         "use strict";
         let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
         let audioCtx = new AudioContext();
+        let tls = Tls();
         let stopPlayback = () => {};
         let playSmf = (smf, sf2, synth) => {
             stopPlayback();
@@ -400,6 +402,30 @@
             updateScaleTimeRanges(gui.regionRef, smf.ticksPerBeat, totalTicks, totalNotes);
         };
 
+        let initPlaybackBtns = function() {
+            gui.playInputBtn.onclick = () => {
+                let synth = Synth(audioCtx, currentSf2);
+                if (!currentSmf) {
+                    alert('MIDI file not loaded');
+                } else {
+                    playSmf(currentSmf, currentSf2, synth);
+                }
+            };
+            gui.playOutputBtn.onclick = () => {
+                if (!currentSmf) {
+                    alert('MIDI file not loaded');
+                } else {
+                    let synth = Synth(audioCtx, currentSf2);
+                    let params = collectParams(gui);
+                    let buff = ToRanamFormat(currentSmf, params);
+                    if (buff) {
+                        let parsed = Ns.Libs.SMFreader(buff);
+                        playSmf(parsed, currentSf2, synth);
+                    }
+                }
+            };
+        };
+
         let main = function () {
             gui.smfInput.onclick = (e) => {
                 gui.smfInput.value = null;
@@ -423,28 +449,8 @@
                 gui.soundfontLoadingImg.style.display = 'inline-block';
                 loadSelectedFile(gui.sf2Input.files[0], (sf2Buf) => {
                     gui.soundfontLoadingImg.style.display = 'none';
-                    let adapter = Sf2Adapter(sf2Buf, audioCtx);
-                    let synth = Synth(audioCtx, adapter);
-                    currentSf2 = adapter;
-                    gui.playInputBtn.onclick = () => {
-                        if (!currentSmf) {
-                            alert('MIDI file not loaded');
-                        } else {
-                            playSmf(currentSmf, adapter, synth);
-                        }
-                    };
-                    gui.playOutputBtn.onclick = () => {
-                        if (!currentSmf) {
-                            alert('MIDI file not loaded');
-                        } else {
-                            let params = collectParams(gui);
-                            let buff = ToRanamFormat(currentSmf, params);
-                            if (buff) {
-                                let parsed = Ns.Libs.SMFreader(buff);
-                                playSmf(parsed, adapter, synth);
-                            }
-                        }
-                    };
+                    currentSf2 = Sf2Adapter(sf2Buf, audioCtx);
+                    initPlaybackBtns();
                 });
             };
             gui.convertBtn.onclick = () => {
@@ -473,6 +479,15 @@
                         changeAsUser($$('select.scale', reg), 'Bayati');
                         changeAsUser($$('select.key-note', reg), 'Do');
                     });
+            };
+            tls.http('./sf2/ranam_full.sf2', 'arraybuffer').then = (sf2Buf) => {
+                let statusDom = $$('.sf2-http-status')[0];
+                statusDom.style.color = 'rgb(2, 255, 0)';
+                statusDom.innerHTML = 'Loaded .sf2 ' + sf2Buf.byteLength + ' bytes';
+                if (!currentSf2) {
+                    currentSf2 = Sf2Adapter(sf2Buf, audioCtx);
+                    initPlaybackBtns();
+                }
             };
         };
 
