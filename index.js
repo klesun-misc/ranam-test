@@ -10,7 +10,7 @@
         "use strict";
         let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
         let audioCtx = new AudioContext();
-        let tls = Tls();
+        let {http, opt} = Tls();
         let stopPlayback = () => {};
         let playSmf = (smf, sf2, synth) => {
             stopPlayback();
@@ -150,9 +150,8 @@
             playOutputBtn: $$('button.play-output', form)[0],
         };
 
-        let getTotalTicks = function (smfReader) {
-            let ticksPerTrack = smfReader.tracks.map(t => t.events.reduce((sum, e) => sum + e.delta, 0));
-            return Math.max(...ticksPerTrack);
+        let getTotalTicks = function (events) {
+            return events.reduce((sum, e) => sum + e.delta, 0);
         };
 
         let isNoteOn = (readerEvent) =>
@@ -160,26 +159,29 @@
             readerEvent.midiEventType === 9 &&
             readerEvent.parameter2 > 0;
 
-        let getTotalNotes = function (smfReader) {
-            let notesPerTrack = smfReader.tracks
-                .map(t => t.events.filter(isNoteOn).length);
-            return Math.max(...notesPerTrack);
+        let getTotalNotes = function (events) {
+            return events.filter(isNoteOn).length;
         };
 
-        let updateScaleTimeRanges = function (div, ticksPerBeat, totalTicks, totalNotes) {
+        let updateScaleTimeRanges = function (div) {
             let formatSelect = $$('select.from-to-format', div)[0];
             let onchange = () => {
                 let step = 1;
                 let max = 1;
-                let data = collectRegion(div);
+                let formData = collectParams(gui);
+                let regionData = collectRegion(div);
+                let ticksPerBeat = opt(currentSmf).map(smf => smf.ticksPerBeat).def(384);
+                let oudEvents = opt(currentSmf).map(smf => smf.tracks[formData.oudTrackNum]).fmp(t => t.events);
+                let totalTicks = getTotalTicks(oudEvents);
+                let totalNotes = getTotalNotes(oudEvents);
 
-                let fromProg = data.from / $$('input.from', div)[0].getAttribute('max');
-                let toProg = data.to / $$('input.to', div)[0].getAttribute('max');
+                let fromProg = regionData.from / $$('input.from', div)[0].getAttribute('max');
+                let toProg = regionData.to / $$('input.to', div)[0].getAttribute('max');
 
-                if (data.fromToFormat === 'Notes') {
+                if (regionData.fromToFormat === 'Notes') {
                     step = 1;
                     max = totalNotes;
-                } else if (data.fromToFormat === 'Ticks') {
+                } else if (regionData.fromToFormat === 'Ticks') {
                     step = ticksPerBeat;
                     max = totalTicks;
                 }
@@ -364,6 +366,8 @@
                             }
                         });
                     });
+                $$(':scope > div', gui.regionListCont)
+                    .forEach(div => updateScaleTimeRanges(div));
             };
             for (let i = 0; i < smf.tracks.length; ++i) {
                 let track = smf.tracks[i];
@@ -395,14 +399,10 @@
             $$('button.play-track', noneTr)[0].remove();
             gui.currentTracks.appendChild(noneTr);
 
-            let totalTicks = getTotalTicks(smf);
-            let totalNotes = getTotalNotes(smf);
             gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
             $$(':scope > div', gui.regionListCont)
-                .forEach(div => updateScaleTimeRanges(
-                    div, smf.ticksPerBeat, totalTicks, totalNotes
-                ));
-            updateScaleTimeRanges(gui.regionRef, smf.ticksPerBeat, totalTicks, totalNotes);
+                .forEach(div => updateScaleTimeRanges(div));
+            updateScaleTimeRanges(gui.regionRef);
         };
 
         let initPlaybackBtns = function() {
@@ -437,9 +437,13 @@
                 (inputEvent) => loadSelectedFile(gui.smfInput.files[0],
                 (smfBuf) => {
                     let smf = Ns.Libs.SMFreader(smfBuf);
-                    console.log('Parsed SMF', smf);
-                    populateSmfGui(smf);
-                    currentSmf = smf;
+                    if (smf) {
+                        console.log('Parsed SMF', smf);
+                        currentSmf = smf;
+                        populateSmfGui(smf);
+                    } else {
+                        gui.smfInput.value = null;
+                    }
                 });
             gui.sf2Input.onclick = (e) => {
                 gui.smfInput.value = null;
@@ -484,7 +488,7 @@
             };
             //let sf2Url = './sf2/ranam_full.sf2';
             let sf2Url = 'https://dl.dropbox.com/s/ighf7wpdw2yfu6x/ranam_full.sf2?dl=0';
-            tls.http(sf2Url, 'arraybuffer').then = (sf2Buf) => {
+            http(sf2Url, 'arraybuffer').then = (sf2Buf) => {
                 let statusDom = $$('.sf2-http-status')[0];
                 statusDom.style.color = 'rgb(2, 255, 0)';
                 statusDom.innerHTML = 'Loaded .sf2 ' + sf2Buf.byteLength + ' bytes';

@@ -4,6 +4,43 @@
  */
 define([], () => (...ctorArgs) => {
 
+    /** similar to Java's Optional
+     * @param forceIsPresent - use when value may be null (when it's not typed for example) */
+    let opt = function (value, forceIsPresent = false) {
+        let has = () => forceIsPresent ||
+        value !== null && value !== undefined;
+        let self;
+        return self = {
+            map: (f) => has() ? opt(f(value)) : opt(null),
+            /** flat map - return empty or mapped array*/
+            fmp: (f) => has() ? f(value) : [],
+            flt: (f) => has() && f(value) ? opt(value) : opt(null),
+            saf: (f) => {
+                if (has()) {
+                    try { return opt(f(value)); }
+                    catch (exc) { console.error('Opt mapping threw an exception', exc); }
+                }
+                return opt(null);
+            },
+            def: (def) => has() ? value : def,
+            has: has,
+            set get(cb) { if (has()) { cb(value); } },
+            wth: (f) => {
+                if (has()) { f(value); }
+                return self;
+            },
+            uni: (some, none) => has() ? some(value) : none(),
+            err: (none) => {
+                if (has()) {
+                    return { set els(some) { some(value); } };
+                } else {
+                    none();
+                    return { set els(some) { } };
+                }
+            },
+        };
+    };
+
     /**
      * similar to the built-in Promise, I guess,
      * but in slightly more convenient format
@@ -46,6 +83,7 @@ define([], () => (...ctorArgs) => {
     });
 
     return {
+        opt: opt,
         promise: promise,
         http: http,
     };
