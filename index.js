@@ -480,7 +480,9 @@
                         changeAsUser($$('select.key-note', reg), 'Do');
                     });
             };
-            tls.http('./sf2/ranam_full.sf2', 'arraybuffer').then = (sf2Buf) => {
+            //let sf2Url = './sf2/ranam_full.sf2';
+            let sf2Url = 'https://dl.dropbox.com/s/ighf7wpdw2yfu6x/ranam_full.sf2?dl=0';
+            tls.http(sf2Url, 'arraybuffer').then = (sf2Buf) => {
                 let statusDom = $$('.sf2-http-status')[0];
                 statusDom.style.color = 'rgb(2, 255, 0)';
                 statusDom.innerHTML = 'Loaded .sf2 ' + sf2Buf.byteLength + ' bytes';
