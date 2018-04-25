@@ -100,7 +100,7 @@ define([], () => (audioCtx, sf2Adapter) => {
                 velocity: parameter2, preset: channel.preset,
             };
             /** @debug, dunno why, but bank/program are different in sf2 from what we set in the converter */
-            if (midiChannel === 0) { // Ranam Oud
+            if (params.bank == 121 && params.preset == 123) { // Ranam Oud
                 params.bank = 20;
                 params.preset = 25;
             } else if (midiChannel === 10) { // Ranam Tabla

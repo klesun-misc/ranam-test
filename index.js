@@ -1,10 +1,21 @@
 
-define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', './mods/Synth.js'], (Sf2Adapter, ToRanamFormat, PlaySmf, Synth) => {
-    return (form) => {
-
+(function(){
+    let klesun = Klesun();
+    klesun.requires('./mods/Sf2Adapter.js').then = (Sf2Adapter) =>
+    klesun.requires('./mods/ToRanamFormat.js').then = (ToRanamFormat) =>
+    klesun.requires('./mods/PlaySmf.js').then = (PlaySmf) =>
+    klesun.requires('./mods/Synth.js').then = (Synth) =>
+    klesun.whenLoaded = () => (form) => {
         "use strict";
         let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
         let audioCtx = new AudioContext();
+        let stopPlayback = () => {};
+        let playSmf = (smf, sf2, synth) => {
+            stopPlayback();
+            stopPlayback = PlaySmf(smf, sf2, synth);
+        };
+        let currentSmf = null;
+        let currentSf2 = null;
 
         let loadSelectedFile = function (fileInfo, whenLoaded) {
             if (!fileInfo) {
@@ -286,8 +297,54 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', 
             }
         };
 
-        let populateSmfGui = function(smf)
-        {
+        /** change all preset/bank change messages to 121/123 */
+        let oudizeTrack = function(track) {
+            // preset event
+            track.events.unshift({
+                delta: 0, type: 'MIDI', midiEventType: 12,
+                midiChannel: 0, parameter1: 123,
+            });
+            // bank event
+            track.events.unshift({
+                delta: 0, type: 'MIDI', midiEventType: 11,
+                midiChannel: 0, parameter1: 0, parameter2: 121,
+            });
+            track.events.filter(e => e.type === 'MIDI').forEach(e => {
+                e.midiChannel = 0;
+                if (e.midiEventType === 12) {
+                    e.parameter1 = 123; // override preset
+                } else if (e.midiEventType === 11 && e.parameter1 === 0) {
+                    e.parameter2 = 121; // override bank
+                }
+            });
+        };
+
+        let playTrack = function(trackNum, isOud, isTabla) {
+            let possible = false;
+            switch (null) {
+                case currentSmf: alert('Load MIDI file first!'); break;
+                case currentSf2: alert('Load .sf2 first!'); break;
+                default: possible = true;
+            }
+            if (possible) {
+                let smfCopy = JSON.parse(JSON.stringify(currentSmf));
+                // 0 - config track with tempo and stuff
+                let isIrrelevant = (_,i) => i !== 0 && i !== trackNum;
+                //let params = collectParams(gui);
+                smfCopy.tracks.filter(isIrrelevant).forEach((t) => t.events = []);
+                if (isOud) {
+                    oudizeTrack(smfCopy.tracks[trackNum]);
+                } else if (isTabla) {
+                    smfCopy.tracks[trackNum].events
+                        .filter(e => e.type === 'MIDI')
+                        .forEach(e => e.midiChannel = 10);
+                }
+                let synth = Synth(audioCtx, currentSf2);
+                playSmf(smfCopy, currentSf2, synth);
+            }
+        };
+
+        let populateSmfGui = function(smf) {
             gui.currentTracks.innerHTML = '';
             let oudTrackNum = smf.tracks.length > 1 ? 1 : 0;
             let onlyOne = () => {
@@ -316,9 +373,9 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', 
                 tablaRadio.value = i;
                 oudRadio.onchange = onlyOne;
                 tablaRadio.onchange = onlyOne;
-                $$('button.play-track', tr)[0].onclick = () => {
-                    alert('Coming soon!');
-                };
+                $$('button.play-track', tr)[0].onclick = () => playTrack(
+                    i, oudRadio.checked, tablaRadio.checked
+                );
                 if (i === oudTrackNum) {
                     $$('input[name="isOudTrack"]', tr)[0].checked = true;
                     $$('input[name="isTablaTrack"]', tr)[0].setAttribute('disabled', 'disabled');
@@ -344,7 +401,6 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', 
         };
 
         let main = function () {
-            let currentSmf = null;
             gui.smfInput.onclick = (e) => {
                 gui.smfInput.value = null;
             };
@@ -360,36 +416,37 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', 
             gui.sf2Input.onclick = (e) => {
                 gui.smfInput.value = null;
             };
-            gui.sf2Input.onchange =
-                (inputEvent) => {
-                    gui.soundfontLoadingImg.style.display = 'inline-block';
-                    loadSelectedFile(gui.sf2Input.files[0], (sf2Buf) => {
-                        gui.soundfontLoadingImg.style.display = 'none';
-                        let adapter = Sf2Adapter(sf2Buf, audioCtx);
-                        let synth = Synth(audioCtx, adapter);
-                        gui.playInputBtn.onclick = () => {
-                            if (!currentSmf) {
-                                alert('MIDI file not loaded');
-                            } else {
-                                let stop = PlaySmf(currentSmf, adapter, synth);
-                                setTimeout(stop, 15000);
+            gui.sf2Input.onchange = (inputEvent) => {
+                if (!gui.sf2Input.files[0]) {
+                    return; // user pressed "Cancel"
+                }
+                gui.soundfontLoadingImg.style.display = 'inline-block';
+                loadSelectedFile(gui.sf2Input.files[0], (sf2Buf) => {
+                    gui.soundfontLoadingImg.style.display = 'none';
+                    let adapter = Sf2Adapter(sf2Buf, audioCtx);
+                    let synth = Synth(audioCtx, adapter);
+                    currentSf2 = adapter;
+                    gui.playInputBtn.onclick = () => {
+                        if (!currentSmf) {
+                            alert('MIDI file not loaded');
+                        } else {
+                            playSmf(currentSmf, adapter, synth);
+                        }
+                    };
+                    gui.playOutputBtn.onclick = () => {
+                        if (!currentSmf) {
+                            alert('MIDI file not loaded');
+                        } else {
+                            let params = collectParams(gui);
+                            let buff = ToRanamFormat(currentSmf, params);
+                            if (buff) {
+                                let parsed = Ns.Libs.SMFreader(buff);
+                                playSmf(parsed, adapter, synth);
                             }
-                        };
-                        gui.playOutputBtn.onclick = () => {
-                            if (!currentSmf) {
-                                alert('MIDI file not loaded');
-                            } else {
-                                let params = collectParams(gui);
-                                let buff = ToRanamFormat(currentSmf, params);
-                                if (buff) {
-                                    let parsed = Ns.Libs.SMFreader(buff);
-                                    let stop = PlaySmf(parsed, adapter, synth);
-                                    setTimeout(stop, 15000);
-                                }
-                            }
-                        };
-                    });
-                };
+                        }
+                    };
+                });
+            };
             gui.convertBtn.onclick = () => {
                 let params = collectParams(gui);
                 let buff = ToRanamFormat(currentSmf, params);
@@ -421,4 +478,4 @@ define(['./mods/Sf2Adapter.js', './mods/ToRanamFormat.js', './mods/PlaySmf.js', 
 
         main();
     };
-});
+}());
