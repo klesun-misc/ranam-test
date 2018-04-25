@@ -134,6 +134,7 @@
         let gui = {
             smfInput: $$('input[type="file"].midi-file', form)[0],
             sf2Input: $$('input[type="file"].soundfont-file', form)[0],
+            smfFieldSet: $$('fieldset.needs-smf', form)[0],
             ticksPerBeatHolder: $$('.ticks-per-beat', form)[0],
             currentTracks: $$('tbody.current-tracks', form)[0],
             trackTrRef: $$('.current-tracks tr')[0].cloneNode(true),
@@ -348,6 +349,8 @@
 
         let populateSmfGui = function(smf) {
             gui.currentTracks.innerHTML = '';
+            gui.smfFieldSet.removeAttribute('disabled');
+            gui.smfFieldSet.removeAttribute('title');
             let oudTrackNum = smf.tracks.length > 1 ? 1 : 0;
             let onlyOne = () => {
                 $$(':scope > tr.real', gui.currentTracks)
@@ -437,7 +440,6 @@
                     console.log('Parsed SMF', smf);
                     populateSmfGui(smf);
                     currentSmf = smf;
-                    gui.convertBtn.removeAttribute('disabled');
                 });
             gui.sf2Input.onclick = (e) => {
                 gui.smfInput.value = null;
