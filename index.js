@@ -1,11 +1,11 @@
 
 (function(){
     let klesun = Klesun();
-    klesun.requires('./mods/Sf2Adapter.js').then = (Sf2Adapter) =>
-    klesun.requires('./mods/ToRanamFormat.js').then = (ToRanamFormat) =>
-    klesun.requires('./mods/PlaySmf.js').then = (PlaySmf) =>
-    klesun.requires('./mods/Synth.js').then = (Synth) =>
-    klesun.requires('./mods/Tls.js').then = (Tls) =>
+    klesun.requires('./classes/Sf2Adapter.js').then = (Sf2Adapter) =>
+    klesun.requires('./classes/ToRanamFormat.js').then = (ToRanamFormat) =>
+    klesun.requires('./classes/PlaySmf.js').then = (PlaySmf) =>
+    klesun.requires('./classes/Synth.js').then = (Synth) =>
+    klesun.requires('./classes/Tls.js').then = (Tls) =>
     klesun.whenLoaded = () => (form) => {
         "use strict";
         let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));

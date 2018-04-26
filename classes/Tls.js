@@ -82,9 +82,30 @@ define([], () => (...ctorArgs) => {
         oReq.send(null);
     });
 
+    /** a shorthand to create dom elements in js with one expression */
+    let mkDom = (tagName, params) => {
+        let dom = document.createElement(tagName);
+        for (let [k,v] of Object.entries(params || {})) {
+            if (k === 'innerHTML') {
+                dom.innerHTML = v;
+            } else if (k === 'children') {
+                v.forEach(c => dom.appendChild(c));
+            } else if (k === 'style') {
+                Object.keys(v).forEach(k => dom.style[k] = v[k]);
+            } else {
+                dom[k] = v;
+                if (typeof v !== 'function') {
+                    dom.setAttribute(k, v);
+                }
+            }
+        }
+        return dom;
+    };
+
     return {
         opt: opt,
         promise: promise,
         http: http,
+        mkDom: mkDom,
     };
 });
