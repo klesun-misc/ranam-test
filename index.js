@@ -14,7 +14,20 @@
         let stopPlayback = () => {};
         let playSmf = (smf, sf2, synth) => {
             stopPlayback();
-            stopPlayback = PlaySmf(smf, sf2, synth);
+            form.classList.add('playing');
+            let playbackFinished = () => {
+                form.classList.remove('playing');
+                $$('.destroy-when-music-stops', form)
+                    .forEach(dom => dom.remove());
+                $$('button.current-source')
+                    .forEach(dom => dom.classList.remove('current-source'));
+            };
+            let playback = PlaySmf(smf, sf2, synth);
+            playback.then = playbackFinished;
+            stopPlayback = () => {
+                playbackFinished();
+                playback.stop();
+            };
         };
         let currentSmf = null;
         let currentSf2 = null;
@@ -164,6 +177,16 @@
 
         let getTotalNotes = function (events) {
             return events.filter(isNoteOn).length;
+        };
+
+        let switchWithStopBtn = function(playBtn) {
+            playBtn.classList.add('current-source');
+            let stopBtn = document.createElement('button');
+            stopBtn.innerHTML = 'Stop';
+            stopBtn.classList.add('destroy-when-music-stops');
+            stopBtn.setAttribute('type', 'button');
+            playBtn.parentNode.insertBefore(stopBtn, playBtn);
+            stopBtn.onclick = () => stopPlayback();
         };
 
         let updateScaleTimeRanges = function (div) {
@@ -349,6 +372,9 @@
                 }
                 let synth = Synth(audioCtx, currentSf2);
                 playSmf(smfCopy, currentSf2, synth);
+                return true;
+            } else {
+                return false;
             }
         };
 
@@ -385,9 +411,12 @@
                 tablaRadio.value = i;
                 oudRadio.onchange = onlyOne;
                 tablaRadio.onchange = onlyOne;
-                $$('button.play-track', tr)[0].onclick = () => playTrack(
-                    i, oudRadio.checked, tablaRadio.checked
-                );
+                let playBtn = $$('button.play-track', tr)[0];
+                playBtn.onclick = () => {
+                    if (playTrack(i, oudRadio.checked, tablaRadio.checked)) {
+                        switchWithStopBtn(playBtn);
+                    }
+                };
                 if (i === oudTrackNum) {
                     $$('input[name="isOudTrack"]', tr)[0].checked = true;
                     $$('input[name="isTablaTrack"]', tr)[0].setAttribute('disabled', 'disabled');
@@ -415,6 +444,7 @@
                     alert('MIDI file not loaded');
                 } else {
                     playSmf(currentSmf, currentSf2, synth);
+                    switchWithStopBtn(gui.playInputBtn);
                 }
             };
             gui.playOutputBtn.onclick = () => {
@@ -427,15 +457,14 @@
                     if (buff) {
                         let parsed = Ns.Libs.SMFreader(buff);
                         playSmf(parsed, currentSf2, synth);
+                        switchWithStopBtn(gui.playOutputBtn);
                     }
                 }
             };
         };
 
         let main = function () {
-            gui.smfInput.onclick = (e) => {
-                gui.smfInput.value = null;
-            };
+            gui.smfInput.value = null;
             gui.smfInput.onchange =
                 (inputEvent) => loadSelectedFile(gui.smfInput.files[0],
                 (smfBuf) => {
@@ -448,9 +477,7 @@
                         gui.smfInput.value = null;
                     }
                 });
-            gui.sf2Input.onclick = (e) => {
-                gui.smfInput.value = null;
-            };
+            gui.sf2Input.value = null;
             gui.sf2Input.onchange = (inputEvent) => {
                 if (!gui.sf2Input.files[0]) {
                     return; // user pressed "Cancel"

@@ -113,12 +113,11 @@
             </div>
         </div>
         <label>Remove All Meta Events: <input type="checkbox" class="remove-meta"/></label><br/>
-        <label>Convert to Ranam format:
-            <button class="play-output" type="button" onclick="alert('Load soundfont first')">Play converted</button>
-            <button type="button" title="Upload General MIDI first!" class="convert-to-arabic">Save converted .mid</button>
-        </label>
+        <label>Convert to Ranam format:</label>
+        <button type="button" class="play-output" onclick="alert('Load soundfont first')">Play converted</button>
+        <button type="button" title="Upload General MIDI first!" class="convert-to-arabic">Save converted .mid</button>
     </fieldset>
-    <div style="margin: 8px; padding-left: 8px; background-color: darkgrey;">
+    <div class="playback-config">
         <h3>Playback (DEBUG)</h3>
         <p class="sf2-http-status" style="color: yellow;">Loading .sf2 via HTTP... (~60 MiB)</p>
         <label>Custom soundfont .sf2 file: <input type="file" class="soundfont-file" accept=".sf2"/></label>
@@ -189,6 +188,20 @@
         /*border: 4px solid red;*/
         /*text-shadow: 1px 1px 2px pink;*/
         box-shadow: 0 0 13px 4.5px rgba(81, 203, 238, 1);
+    }
+    .playback-config {
+        margin: 8px;
+        padding-left: 8px;
+        background-color: darkgrey;
+    }
+    form.playing .playback-config {
+        box-shadow: 0 0 13px 4.5px rgb(196, 98, 42);
+    }
+    form.playing button.current-source {
+        display: none;
+    }
+    form.playing button.destroy-when-music-stops {
+        box-shadow: 0 0 13px 4.5px rgb(189, 98, 195);
     }
 </style>
 

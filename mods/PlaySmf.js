@@ -24,6 +24,8 @@ define([], () => (smfReader, sf2Adapter, synth) => {
     let tempo = 120; // TODO: take from SMF
     let stopped = false;
     let chordIndex = -1;
+    let whenDones = [];
+
     smfReader.tracks.forEach(t => t.events
         .filter(e => e.type === 'MIDI')
         .forEach(e => synth.handleMidiEvent(e, true)));
@@ -49,11 +51,20 @@ define([], () => (smfReader, sf2Adapter, synth) => {
                     playNext();
                 });
             } else {
-                // finished
+                whenDones.forEach(cb => cb());
             }
         };
         playNext();
     });
 
-    return () => stopped = true;
+    return {
+        set then(whenDone) {
+            if (chordIndex >= ticksPerChord.length) {
+                whenDone();
+            } else {
+                whenDones.push(whenDone);
+            }
+        },
+        stop: () => stopped = true,
+    };
 });
