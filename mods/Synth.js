@@ -115,13 +115,18 @@ define([], () => (audioCtx, sf2Adapter) => {
                     console.error('No sample in the bank: ' + channel.bank + ' ' + channel.preset + ' ' + parameter1);
                 } else if (!preloadOnly) {
                     samples.forEach(sampleData => {
-                        channel.pressedNotes.push(press(sampleData, channel));
+                        let pressed = press(sampleData, channel);
+                        pressed.semitone = params.semitone;
+                        channel.pressedNotes.push(pressed);
                     });
                 }
             })
         } else if (isNoteOff(event)) {
-            channels[midiChannel].pressedNotes.forEach(release);
-            channels[midiChannel].pressedNotes = [];
+            channel.pressedNotes
+                .filter(p => p.semitone == event.parameter1)
+                .forEach(release);
+            channel.pressedNotes = channel.pressedNotes
+                .filter(p => p.semitone != event.parameter1);
         } else if (midiEventType === 14) { // pitch bend
             let pitchBend = (parameter1 + parameter2 << 7) * 2 / 16384 - 1;
             setPitchBend(pitchBend, midiChannel);
