@@ -351,10 +351,12 @@
         };
 
         let playTrack = function(trackNum, isOud, isTabla) {
+            let configTrack = collectParams(gui).configTracks[trackNum];
             let possible = false;
             switch (null) {
                 case currentSmf: alert('Load MIDI file first!'); break;
                 case currentSf2: alert('Load .sf2 first!'); break;
+                case configTrack: alert('No such track ' + trackNum + '!'); break;
                 default: possible = true;
             }
             if (possible) {
@@ -370,6 +372,8 @@
                         .filter(e => e.type === 'MIDI')
                         .forEach(e => e.midiChannel = 10);
                 }
+                smfCopy.tracks[trackNum].events.filter(isNoteOn)
+                    .forEach(e => e.parameter2 *= configTrack.volume / 127);
                 let synth = Synth(audioCtx, currentSf2);
                 playSmf(smfCopy, currentSf2, synth);
                 return true;
