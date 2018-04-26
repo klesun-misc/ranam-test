@@ -72,6 +72,7 @@ define([], () => (smfReader, formParams) => {
         }
         let oudTrack = smfReader.tracks[oudTrackNum];
 
+        let noteOnIdx = -1;
         let openNotes = new Set();
         let sortedEvents = [];
         for (let i = 0; i < oudTrack.events.length; ++i) {
@@ -83,19 +84,20 @@ define([], () => (smfReader, formParams) => {
             for (let j = 0; j < tickEvents.length; ++j) {
                 let event = tickEvents[j];
                 if (isNoteOn(event)) {
+                    ++noteOnIdx;
                     let semitone = event.parameter1;
                     openNotes.add(semitone);
                     if (semitone < 43 || semitone > 64) {
-                        errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at index ' + (chordStart + j));
+                        errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at note ' + noteOnIdx);
                     }
                     if (openNotes.size > 1) {
-                        errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at index ' + (chordStart + j) + '. Please fix them and try again');
+                        errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at note ' + noteOnIdx + '. Please fix them and try again');
                     }
                 } else if (isNoteOff(event)) {
                     let semitone = event.parameter1;
                     openNotes.delete(semitone);
                 } else if (isPitchBend(event)) {
-                    warnings.push('Your MIDI has pitchbend already at index ' + (chordStart + j) + '. Please remove them if you don’t want them');
+                    warnings.push('Your MIDI has pitchbend already at note ' + noteOnIdx + '. Please remove them if you don’t want them');
                 }
             }
         }
