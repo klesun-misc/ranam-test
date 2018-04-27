@@ -172,10 +172,10 @@ define([], () => (sf2Buf, audioCtx) => {
      */
     let fillBorders = function(generators)
     {
-        // if (generators.filter(g => isNull(g.keyRange)).length > 0) {
+        if (generators.filter(g => isNull(g.keyRange)).length > 0) {
             // there are generators that are not limited by key range
             return;
-        // }
+        }
 
         let lo = 127;
         let loGens = [];
@@ -309,7 +309,7 @@ define([], () => (sf2Buf, audioCtx) => {
         if (!(presets = bankToPresetToSamples[bank])) return [];
         if (!(samples = presets[preset])) return [];
 
-        return samples
+        let filtered = samples
             .map(s => s.generators
                 .filter(g =>
                     g.keyRange.lo <= semitone &&
@@ -322,6 +322,7 @@ define([], () => (sf2Buf, audioCtx) => {
                     sampleNumber: s.sampleNumber,
                 }))
             .reduce((a,b) => a.concat(b), []);
+        return filtered;
     };
 
     let determineCorrectionCents = (delta, generator) => {

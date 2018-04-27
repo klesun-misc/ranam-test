@@ -26,10 +26,6 @@ define([], () => (smfReader, sf2Adapter, synth) => {
     let chordIndex = -1;
     let whenDones = [];
 
-    smfReader.tracks.forEach(t => t.events
-        .filter(e => e.type === 'MIDI')
-        .forEach(e => synth.handleMidiEvent(e, true)));
-
     sf2Adapter.onIdle(() => {
         let startTime = window.performance.now();
         let playNext = () => {

@@ -2,8 +2,9 @@
 /**
  * a software analog of a MIDI device that
  * takes a MIDI event and produces the sound
+ * @param fluidSf2 - optional
  */
-define([], () => (audioCtx, sf2Adapter) => {
+define([], () => (audioCtx, sf2Adapter, fluidSf2) => {
     "use strict";
 
     let isNoteOn = (readerEvent) =>
@@ -99,18 +100,22 @@ define([], () => (audioCtx, sf2Adapter) => {
                 semitone: parameter1, bank: channel.bank,
                 velocity: parameter2, preset: channel.preset,
             };
+            let useRanamSf2 = false;
             /** @debug, dunno why, but bank/program are different in sf2 from what we set in the converter */
             if (params.bank == 121 && params.preset == 123) { // Ranam Oud
                 params.bank = 20;
                 params.preset = 25;
+                useRanamSf2 = true;
             } else if (midiChannel === 10) { // Ranam Tabla
                 params.bank = 0;
                 params.preset = 0;
+                useRanamSf2 = true;
             } else if (midiChannel === 9) {
                 // drum track
                 params.bank = 128;
             }
-            sf2Adapter.getSampleData(params, (samples) => {
+            let sf2 = (useRanamSf2 || !fluidSf2) ? sf2Adapter : fluidSf2;
+            sf2.getSampleData(params, (samples) => {
                 if (samples.length === 0) {
                     console.error('No sample in the bank: ' + channel.bank + ' ' + channel.preset + ' ' + parameter1);
                 } else if (!preloadOnly) {

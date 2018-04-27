@@ -77,7 +77,6 @@ define([], () => (smfReader, formParams) => {
         let sortedEvents = [];
         for (let i = 0; i < oudTrack.events.length; ++i) {
             let tickEvents = takeTickEvents(oudTrack.events, i);
-            let chordStart = i;
             i += tickEvents.length - 1;
             tickEvents = sortTickEvents(tickEvents);
             sortedEvents.push(...tickEvents);
@@ -218,7 +217,7 @@ define([], () => (smfReader, formParams) => {
                 }
                 let parameter2 = readerEvent.parameter2;
                 if (isNoteOn(readerEvent)) {
-                    parameter2 *= formParams.configTracks[trackNum].volume / 100;
+                    parameter2 = Math.round(parameter2 * formParams.configTracks[trackNum].volume / 100);
                 }
                 return new Midi.Event({
                     type: readerEvent.midiEventType * 16,

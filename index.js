@@ -10,23 +10,50 @@
         "use strict";
         let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
         let audioCtx = new AudioContext();
-        let {http, opt} = Tls();
+        let fluidSf2 = null;
+        let {http, opt, promise} = Tls();
         let stopPlayback = () => {};
-        let playSmf = (smf, sf2, synth) => {
-            stopPlayback();
-            form.classList.add('playing');
-            let playbackFinished = () => {
-                form.classList.remove('playing');
-                $$('.destroy-when-music-stops', form)
-                    .forEach(dom => dom.remove());
-                $$('button.current-source')
-                    .forEach(dom => dom.classList.remove('current-source'));
+        
+        let preloadSamples = (smfReader, synth, ranamSf2) => promise(done => {
+            let fluidOk = !fluidSf2 ? true : false;
+            let ranamOk = false;
+            let report = () => {
+                if (fluidOk && ranamOk) {
+                    done(123);
+                }
             };
-            let playback = PlaySmf(smf, sf2, synth);
-            playback.then = playbackFinished;
-            stopPlayback = () => {
-                playbackFinished();
-                playback.stop();
+            smfReader.tracks.forEach(t => t.events
+                .filter(e => e.type === 'MIDI')
+                .forEach(e => synth.handleMidiEvent(e, true)));
+            ranamSf2.onIdle(() => {
+                ranamOk = true;
+                report();
+            });
+            opt(fluidSf2).get = (fl) => fl.onIdle(() => {
+                fluidOk = true;
+                report();
+            });
+        });
+
+        let playSmf = (smf, sf2) => {
+            let synth = Synth(audioCtx, currentSf2, fluidSf2);
+            preloadSamples(smf, synth, sf2).then = () => {
+                stopPlayback();
+                form.classList.add('playing');
+                let playbackFinished = () => {
+                    form.classList.remove('playing');
+                    $$('.destroy-when-music-stops', form)
+                        .forEach(dom => dom.remove());
+                    $$('button.current-source')
+                        .forEach(dom => dom.classList.remove('current-source'));
+                };
+
+                let playback = PlaySmf(smf, sf2, synth);
+                playback.then = playbackFinished;
+                stopPlayback = () => {
+                    playbackFinished();
+                    playback.stop();
+                };
             };
         };
         let currentSmf = null;
@@ -373,9 +400,9 @@
                         .forEach(e => e.midiChannel = 10);
                 }
                 smfCopy.tracks[trackNum].events.filter(isNoteOn)
-                    .forEach(e => e.parameter2 *= configTrack.volume / 127);
-                let synth = Synth(audioCtx, currentSf2);
-                playSmf(smfCopy, currentSf2, synth);
+                    .forEach(e => e.parameter2 = Math.round(e.parameter2 * configTrack.volume / 100));
+                console.debug('track SMF', smfCopy);
+                playSmf(smfCopy, currentSf2);
                 return true;
             } else {
                 return false;
@@ -443,11 +470,10 @@
 
         let initPlaybackBtns = function() {
             gui.playInputBtn.onclick = () => {
-                let synth = Synth(audioCtx, currentSf2);
                 if (!currentSmf) {
                     alert('MIDI file not loaded');
                 } else {
-                    playSmf(currentSmf, currentSf2, synth);
+                    playSmf(currentSmf, currentSf2);
                     switchWithStopBtn(gui.playInputBtn);
                 }
             };
@@ -455,12 +481,11 @@
                 if (!currentSmf) {
                     alert('MIDI file not loaded');
                 } else {
-                    let synth = Synth(audioCtx, currentSf2);
                     let params = collectParams(gui);
                     let buff = ToRanamFormat(currentSmf, params);
                     if (buff) {
                         let parsed = Ns.Libs.SMFreader(buff);
-                        playSmf(parsed, currentSf2, synth);
+                        playSmf(parsed, currentSf2);
                         switchWithStopBtn(gui.playOutputBtn);
                     }
                 }
@@ -520,15 +545,25 @@
                         changeAsUser($$('select.key-note', reg), 'Do');
                     });
             };
-            //let sf2Url = './sf2/ranam_full.sf2';
-            let sf2Url = 'https://dl.dropbox.com/s/ighf7wpdw2yfu6x/ranam_full.sf2?dl=0';
+            let sf2Url = './sf2/ranam_full.sf2';
+            //let sf2Url = 'https://dl.dropbox.com/s/ighf7wpdw2yfu6x/ranam_full.sf2?dl=0';
             http(sf2Url, 'arraybuffer').then = (sf2Buf) => {
                 let statusDom = $$('.sf2-http-status')[0];
                 statusDom.style.color = 'rgb(2, 255, 0)';
-                statusDom.innerHTML = 'Loaded .sf2 ' + sf2Buf.byteLength + ' bytes';
+                statusDom.innerHTML = 'Loaded Ranam .sf2 ' + sf2Buf.byteLength + ' bytes';
                 if (!currentSf2) {
                     currentSf2 = Sf2Adapter(sf2Buf, audioCtx);
                     initPlaybackBtns();
+                }
+            };
+            // let sf2FluidUrl = 'https://dl.dropbox.com/s/i1vq6ja3al14o57/fluid.sf2?dl=0';
+            let sf2FluidUrl = 'http://midiana.lv/unv/soundfonts/fluid.sf2';
+            http(sf2FluidUrl, 'arraybuffer').then = (sf2Buf) => {
+                let statusDom = $$('.sf2-http-status-fluid')[0];
+                statusDom.style.color = 'rgb(2, 255, 0)';
+                statusDom.innerHTML = 'Loaded General .sf2 ' + sf2Buf.byteLength + ' bytes';
+                if (!fluidSf2) {
+                    fluidSf2 = Sf2Adapter(sf2Buf, audioCtx);
                 }
             };
         };
