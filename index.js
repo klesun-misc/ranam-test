@@ -35,7 +35,7 @@
             });
         });
 
-        let playSmf = (smf, sf2) => {
+        let playSmf = (smf, sf2, btn) => {
             let synth = Synth(audioCtx, currentSf2, fluidSf2);
             preloadSamples(smf, synth, sf2).then = () => {
                 stopPlayback();
@@ -54,6 +54,7 @@
                     playbackFinished();
                     playback.stop();
                 };
+                switchWithStopBtn(btn);
             };
         };
         let currentSmf = null;
@@ -377,7 +378,7 @@
             });
         };
 
-        let playTrack = function(trackNum, isOud, isTabla) {
+        let playTrack = function(trackNum, isOud, isTabla, btn) {
             let configTrack = collectParams(gui).configTracks[trackNum];
             let possible = false;
             switch (null) {
@@ -402,7 +403,7 @@
                 smfCopy.tracks[trackNum].events.filter(isNoteOn)
                     .forEach(e => e.parameter2 = Math.round(e.parameter2 * configTrack.volume / 100));
                 console.debug('track SMF', smfCopy);
-                playSmf(smfCopy, currentSf2);
+                playSmf(smfCopy, currentSf2, btn);
                 return true;
             } else {
                 return false;
@@ -443,11 +444,9 @@
                 oudRadio.onchange = onlyOne;
                 tablaRadio.onchange = onlyOne;
                 let playBtn = $$('button.play-track', tr)[0];
-                playBtn.onclick = () => {
-                    if (playTrack(i, oudRadio.checked, tablaRadio.checked)) {
-                        switchWithStopBtn(playBtn);
-                    }
-                };
+                playBtn.onclick = () => playTrack(
+                    i, oudRadio.checked, tablaRadio.checked, playBtn
+                );
                 if (i === oudTrackNum) {
                     $$('input[name="isOudTrack"]', tr)[0].checked = true;
                     $$('input[name="isTablaTrack"]', tr)[0].setAttribute('disabled', 'disabled');
@@ -473,8 +472,7 @@
                 if (!currentSmf) {
                     alert('MIDI file not loaded');
                 } else {
-                    playSmf(currentSmf, currentSf2);
-                    switchWithStopBtn(gui.playInputBtn);
+                    playSmf(currentSmf, currentSf2, gui.playInputBtn);
                 }
             };
             gui.playOutputBtn.onclick = () => {
@@ -485,8 +483,7 @@
                     let buff = ToRanamFormat(currentSmf, params);
                     if (buff) {
                         let parsed = Ns.Libs.SMFreader(buff);
-                        playSmf(parsed, currentSf2);
-                        switchWithStopBtn(gui.playOutputBtn);
+                        playSmf(parsed, currentSf2, gui.playOutputBtn);
                     }
                 }
             };
@@ -545,8 +542,8 @@
                         changeAsUser($$('select.key-note', reg), 'Do');
                     });
             };
-            let sf2Url = './sf2/ranam_full.sf2';
-            //let sf2Url = 'https://dl.dropbox.com/s/ighf7wpdw2yfu6x/ranam_full.sf2?dl=0';
+            //let sf2Url = './sf2/ranam_full.sf2';
+            let sf2Url = 'https://dl.dropbox.com/s/ighf7wpdw2yfu6x/ranam_full.sf2?dl=0';
             http(sf2Url, 'arraybuffer').then = (sf2Buf) => {
                 let statusDom = $$('.sf2-http-status')[0];
                 statusDom.style.color = 'rgb(2, 255, 0)';
@@ -556,8 +553,8 @@
                     initPlaybackBtns();
                 }
             };
-            // let sf2FluidUrl = 'https://dl.dropbox.com/s/i1vq6ja3al14o57/fluid.sf2?dl=0';
-            let sf2FluidUrl = 'http://midiana.lv/unv/soundfonts/fluid.sf2';
+            let sf2FluidUrl = 'https://dl.dropbox.com/s/i1vq6ja3al14o57/fluid.sf2?dl=0';
+            //let sf2FluidUrl = 'http://midiana.lv/unv/soundfonts/fluid.sf2';
             http(sf2FluidUrl, 'arraybuffer').then = (sf2Buf) => {
                 let statusDom = $$('.sf2-http-status-fluid')[0];
                 statusDom.style.color = 'rgb(2, 255, 0)';
