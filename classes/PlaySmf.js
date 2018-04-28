@@ -21,7 +21,7 @@ define([], () => (smfReader, sf2Adapter, synth) => {
     }
     let ticksPerChord = Object.keys(ticksToEvents)
         .sort((a,b) => a - b);
-    let tempo = 120; // TODO: take from SMF
+    let tempo = 120;
     let stopped = false;
     let chordIndex = -1;
     let whenDones = [];
@@ -40,8 +40,12 @@ define([], () => (smfReader, sf2Adapter, synth) => {
                     for (let event of ticksToEvents[ticks]) {
                         if (event.type === 'MIDI') {
                             synth.handleMidiEvent(event);
-                        } else {
+                        } else if (event.type === 'meta') {
                             // handle tempo and other stuff
+                            if (event.metaType === 81) { // tempo
+                                // TODO: update currently sounding notes
+                                tempo = 60 * 1000000 / event.metaData.reduce((a,b) => (a << 8) + b, 0);
+                            }
                         }
                     }
                     playNext();

@@ -170,6 +170,7 @@
             sf2Input: $$('input[type="file"].soundfont-file', form)[0],
             smfFieldSet: $$('fieldset.needs-smf', form)[0],
             ticksPerBeatHolder: $$('.ticks-per-beat', form)[0],
+            tempoHolder: $$('.tempo-holder', form)[0],
             trackList: $$('tbody.current-tracks', form)[0],
             trackTrRef: $$('.current-tracks tr')[0].cloneNode(true),
             regionListCont: $$('.region-list', form)[0],
@@ -207,6 +208,21 @@
 
         let getTotalNotes = function (events) {
             return events.filter(isNoteOn).length;
+        };
+
+        let getTicksToTempo = function (smf) {
+            let ticksToTempo = {};
+            for (let track of smf.tracks) {
+                let ticks = 0;
+                for (let event of track.events) {
+                    ticks += event.delta;
+                    if (event.type === 'meta' && event.metaType === 81) { // tempo
+                        let tempo = 60 * 1000000 / event.metaData.reduce((a,b) => (a << 8) + b, 0);
+                        ticksToTempo[ticks] = tempo;
+                    }
+                }
+            }
+            return ticksToTempo;
         };
 
         let switchWithStopBtn = function(playBtn) {
@@ -462,8 +478,13 @@
             $$('input[name="isOudTrack"]', noneTr)[0].remove();
             $$('button.play-track', noneTr)[0].remove();
             gui.trackList.appendChild(noneTr);
-
             gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
+
+            let ticksToTempo = getTicksToTempo(smf);
+            let tempos = Object.values(ticksToTempo);
+            let tempoStr = tempos.map(t => Math.round(t)).join(', ') || '120';
+            gui.tempoHolder.innerHTML = tempoStr;
+
             $$(':scope > div', gui.regionListCont)
                 .forEach(div => updateScaleTimeRanges(div));
             updateScaleTimeRanges(gui.regionRef);
