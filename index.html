@@ -26,7 +26,8 @@
                         <th>Events</th>
                         <th>Oud</th>
                         <th>Tabla</th>
-                        <th>Volume</th>
+                        <th>Velocity</th>
+                        <th>Origin.</th>
                         <th>Play</th>
                     </tr>
                 </thead>
@@ -37,7 +38,8 @@
                         <td class="holder event-cnt"></td>
                         <td><input type="radio" name="isOudTrack" value=""/></td>
                         <td><input type="radio" name="isTablaTrack" value=""/></td>
-                        <td><input type="number" class="track-volume" value="100" min="0" max="100" step="10" style="width: 44px"/>%</td>
+                        <td><input style="text-align: right; width: 44px;" type="number" class="track-volume" value="0" min="1" max="100" step="10" style="width: 44px"/>%</td>
+                        <td style="text-align: right;"><span class="holder original-volume">0</span>%</td>
                         <td><button type="button" class="play-track" onclick="alert('Load MIDI file first!');">Play</button></td>
                     </tr>
                 </tbody>

@@ -75,6 +75,7 @@ define([], () => (smfReader, formParams) => {
         let noteOnIdx = -1;
         let openNotes = new Set();
         let sortedEvents = [];
+        let ticks = 0;
         for (let i = 0; i < oudTrack.events.length; ++i) {
             let tickEvents = takeTickEvents(oudTrack.events, i);
             i += tickEvents.length - 1;
@@ -82,21 +83,22 @@ define([], () => (smfReader, formParams) => {
             sortedEvents.push(...tickEvents);
             for (let j = 0; j < tickEvents.length; ++j) {
                 let event = tickEvents[j];
+                ticks += event.delta;
                 if (isNoteOn(event)) {
                     ++noteOnIdx;
                     let semitone = event.parameter1;
                     openNotes.add(semitone);
                     if (semitone < 43 || semitone > 64) {
-                        errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at note ' + noteOnIdx);
+                        errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at note ' + noteOnIdx + ' (' + ticks + ' ticks)');
                     }
                     if (openNotes.size > 1) {
-                        errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at note ' + noteOnIdx + '. Please fix them and try again');
+                        errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at note ' + noteOnIdx + ' (' + ticks + ' ticks). Please fix them and try again');
                     }
                 } else if (isNoteOff(event)) {
                     let semitone = event.parameter1;
                     openNotes.delete(semitone);
                 } else if (isPitchBend(event)) {
-                    warnings.push('Your MIDI has pitchbend already at note ' + noteOnIdx + '. Please remove them if you don’t want them');
+                    warnings.push('Your MIDI has pitchbend already at note ' + noteOnIdx + ' (' + ticks + ' ticks). Please remove them if you don’t want them');
                 }
             }
         }
@@ -217,7 +219,7 @@ define([], () => (smfReader, formParams) => {
                 }
                 let parameter2 = readerEvent.parameter2;
                 if (isNoteOn(readerEvent)) {
-                    parameter2 = Math.round(parameter2 * formParams.configTracks[trackNum].volume / 100);
+                    parameter2 = Math.round(parameter2 * formParams.configTracks[trackNum].velocityFactor);
                 }
                 return new Midi.Event({
                     type: readerEvent.midiEventType * 16,

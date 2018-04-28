@@ -192,7 +192,9 @@
             oudTrackNum: $$('[name="isOudTrack"]:checked', gui.trackList).map(r => +r.value)[0],
             tablaTrackNum: $$('[name="isTablaTrack"]:checked', gui.trackList).map(r => +r.value || null)[0],
             configTracks: $$(':scope > tr.real', gui.trackList).map((t,i) => 1 && {
-                volume: $$('input.track-volume', t)[0].value,
+                velocityFactor: $$('.holder.original-volume', t)[0].innerHTML <= 0 ? 1 :
+                    $$('input.track-volume', t)[0].value /
+                    $$('.holder.original-volume', t)[0].innerHTML,
             }),
             removeMeta: gui.removeMetaFlag.checked,
         };
@@ -419,7 +421,7 @@
                         .forEach(e => e.midiChannel = 10);
                 }
                 smfCopy.tracks[trackNum].events.filter(isNoteOn)
-                    .forEach(e => e.parameter2 = Math.round(e.parameter2 * configTrack.volume / 100));
+                    .forEach(e => e.parameter2 = Math.ceil(e.parameter2 * configTrack.velocityFactor));
                 console.log('track SMF', smfCopy);
                 playSmf(smfCopy, ranamSf, btn);
                 return true;
@@ -455,6 +457,14 @@
                 $$('.holder.track-number', tr)[0].innerHTML = i;
                 $$('.holder.track-name', tr)[0].innerHTML = track.trackName || '';
                 $$('.holder.event-cnt', tr)[0].innerHTML = track.events.length;
+                let maxVel = track.events
+                    .filter(isNoteOn).map(e => e.parameter2 / 127 * 100)
+                    .map(vol => Math.round(vol))
+                    .reduce((max, vel) => Math.max(max, vel), 1);
+                let velInp = $$('input.track-volume', tr)[0];
+                velInp.value = maxVel;
+                velInp.onchange = () => velInp.value = Math.max(0, Math.min(100, velInp.value));
+                $$('.holder.original-volume', tr)[0].innerHTML = maxVel;
                 let oudRadio = $$('input[name="isOudTrack"]', tr)[0];
                 let tablaRadio = $$('input[name="isTablaTrack"]', tr)[0];
                 oudRadio.value = i;
