@@ -68,6 +68,7 @@
         };
         let currentSmf = null;
         let ranamSf = null;
+        let noteDisplay = null;
 
         let loadSelectedFile = function (fileInfo, whenLoaded) {
             if (!fileInfo) {
@@ -353,7 +354,10 @@
             $$(':scope > div', gui.regionListCont)
                 .forEach(div => updateScaleTimeRanges(div));
             updateScaleTimeRanges(gui.regionRef);
-            NoteDisplay(gui.noteDisplayCont, smf);
+            noteDisplay = NoteDisplay(gui.noteDisplayCont, smf);
+            noteDisplay.onNoteOver = (note) => gui.noteHoverInfoHolder.innerHTML =
+                Object.entries(note).map(([k,v]) => k + ': ' + v).join(' | ');
+            noteDisplay.onNoteOut = (note) => gui.noteHoverInfoHolder.innerHTML = '...';
         };
 
         let initPlaybackBtns = function() {

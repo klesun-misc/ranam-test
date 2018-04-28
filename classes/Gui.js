@@ -23,6 +23,7 @@ define([], () => (form) => {
         convertBtn: $$('button.convert-to-arabic', form)[0],
         removeMetaFlag: $$('input.remove-meta', form)[0],
         noteDisplayCont: $$('.note-display-cont', form)[0],
+        noteHoverInfoHolder: $$('.note-hover-info', form)[0],
         soundfontLoadingImg: $$('img.soundfont-loading', form)[0],
         playInputBtn: $$('button.play-input', form)[0],
         playOutputBtn: $$('button.play-output', form)[0],

@@ -7,7 +7,7 @@ var klesun = Klesun();
 klesun.requires('./Tls.js').then = (Tls) =>
 klesun.whenLoaded = () => {
 
-    let {range, mkDom} = Tls();
+    let {range, mkDom, opt} = Tls();
     let $$ = (s, root) => [...(root || document).querySelectorAll(s)];
 
     let isNoteOn = (readerEvent) =>
@@ -27,6 +27,7 @@ klesun.whenLoaded = () => {
         let chanToNotes = range(0,16).map(i => []);
         for (let [i, track] of Object.entries(smf.tracks)) {
             let time = 0;
+            let noteOnIndex = 0;
             for (let event of track.events) {
                 time += event.delta;
                 if (isNoteOn(event)) {
@@ -35,7 +36,8 @@ klesun.whenLoaded = () => {
                     let velo = event.parameter2;
                     let dura = 0;
                     chanToNotes[chan][tone] = {
-                        tone, dura, time, chan, velo, track: i,
+                        tone, time, dura, chan, velo,
+                        track: i, index: noteOnIndex++,
                     };
                 } else if (isNoteOff(event)) {
                     let chan = event.midiChannel;
@@ -62,14 +64,17 @@ klesun.whenLoaded = () => {
         let rows = $$(':scope > *', container);
         rows.forEach(r => r.innerHTML = '');
 
+        let onNoteOver = (note) => {};
+        let onNoteOut = (note) => {};
+
         let maxX = 0;
         for (let note of notes) {
             let {tone, dura, time, chan, velo, track} = note;
-            let yOffset = tone - 24;
+            let yOffset = 96 - tone;
             if (yOffset > 0 && yOffset < rows.length) {
                 let row = rows[yOffset];
                 row.appendChild(mkDom('div', {
-                    classList: ['colorize-channel'],
+                    classList: ['colorize-channel-bg'],
                     'data-channel': chan,
                     style: {
                         position: 'absolute',
@@ -79,6 +84,8 @@ klesun.whenLoaded = () => {
                         height: '100%',
                         margin: '0',
                     },
+                    onmouseover: () => onNoteOver(note),
+                    onmouseout: () => onNoteOut(note),
                 }));
                 let endX = toPixels(time) + toPixels(dura);
                 maxX = Math.max(maxX, endX);
@@ -87,6 +94,12 @@ klesun.whenLoaded = () => {
             }
         }
         container.style.width = maxX || '100%';
+        opt(container.parentNode).get = scroller =>
+            scroller.scrollTop = scroller.scrollHeight / 3;
+        return {
+            set onNoteOver(cb) { onNoteOver = cb; },
+            set onNoteOut(cb) { onNoteOut = cb; },
+        };
     };
 };
 
