@@ -6,12 +6,14 @@
     klesun.requires('./classes/PlaySmf.js').then = (PlaySmf) =>
     klesun.requires('./classes/Synth.js').then = (Synth) =>
     klesun.requires('./classes/Tls.js').then = (Tls) =>
+    klesun.requires('./classes/MidiUtil.js').then = (MidiUtil) =>
     klesun.whenLoaded = () => (form) => {
         "use strict";
         let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
         let audioCtx = new AudioContext();
         let fluidSf = null;
         let {http, opt, promise} = Tls();
+        let {isNoteOn, scaleVelocity} = MidiUtil();
         let stopPlayback = () => {};
         
         let preloadSamples = (smfReader, synth, ranamSf2) => promise(done => {
@@ -35,6 +37,53 @@
             });
         });
 
+        let gui = {
+            smfInput: $$('input[type="file"].midi-file', form)[0],
+            sf2Input: $$('input[type="file"].soundfont-file', form)[0],
+            smfFieldSet: $$('fieldset.needs-smf', form)[0],
+            ticksPerBeatHolder: $$('.ticks-per-beat', form)[0],
+            tempoHolder: $$('.tempo-holder', form)[0],
+            trackList: $$('tbody.current-tracks', form)[0],
+            trackTrRef: $$('.current-tracks tr')[0].cloneNode(true),
+            regionListCont: $$('.region-list', form)[0],
+            regionRef: $$('.region-list > *', form)[0].cloneNode(true),
+            pitchBendRef: $$('.pitch-bend-list > *', form)[0].cloneNode(true),
+            addAnotherRegionBtn: $$('button.add-another-region', form)[0],
+            resetRegionsBtn: $$('button.reset-regions', form)[0],
+            convertBtn: $$('button.convert-to-arabic', form)[0],
+            removeMetaFlag: $$('input.remove-meta', form)[0],
+            soundfontLoadingImg: $$('img.soundfont-loading', form)[0],
+            playInputBtn: $$('button.play-input', form)[0],
+            playOutputBtn: $$('button.play-output', form)[0],
+            /** @debug */
+            testSf3DecodingBtn: $$('button.test-sf3-decoding', form)[0],
+        };
+
+        let collectRegion = div => 1 && {
+            scale: $$('select.scale', div)[0].value,
+            startingNote: $$('select.key-note', div)[0].value,
+            fromToFormat: $$('select.from-to-format', div)[0].value,
+            from: $$('input.from', div)[0].value,
+            to: $$('input.to', div)[0].value,
+            pitchBends: $$('.pitch-bend-list > *', div)
+                .map(span => 1 && {
+                    noteName: $$('select.pitched-note', span)[0].value,
+                    pitchBend: $$('input.pitch-bend', span)[0].value,
+                }),
+        };
+
+        let collectParams = (gui) => 1 && {
+            scaleRegions: $$(':scope > *', gui.regionListCont).map(collectRegion),
+            oudTrackNum: $$('[name="isOudTrack"]:checked', gui.trackList).map(r => +r.value)[0],
+            tablaTrackNum: $$('[name="isTablaTrack"]:checked', gui.trackList).map(r => +r.value || null)[0],
+            configTracks: $$(':scope > tr.real', gui.trackList).map((t,i) => 1 && {
+                velocityFactor: $$('.holder.original-volume', t)[0].innerHTML <= 0 ? 1 :
+                    $$('input.track-volume', t)[0].value /
+                    $$('.holder.original-volume', t)[0].innerHTML,
+            }),
+            removeMeta: gui.removeMetaFlag.checked,
+        };
+
         let playSmf = (smf, sf2, btn) => {
             let synth = Synth(audioCtx, ranamSf, fluidSf);
             preloadSamples(smf, synth, sf2).then = () => {
@@ -48,7 +97,7 @@
                         .forEach(dom => dom.classList.remove('current-source'));
                 };
 
-                let playback = PlaySmf(smf, sf2, synth);
+                let playback = PlaySmf(smf, synth, () => collectParams(gui));
                 playback.then = playbackFinished;
                 stopPlayback = () => {
                     playbackFinished();
@@ -152,61 +201,9 @@
             Ajam: {},
         };
 
-        let collectRegion = div => 1 && {
-            scale: $$('select.scale', div)[0].value,
-            startingNote: $$('select.key-note', div)[0].value,
-            fromToFormat: $$('select.from-to-format', div)[0].value,
-            from: $$('input.from', div)[0].value,
-            to: $$('input.to', div)[0].value,
-            pitchBends: $$('.pitch-bend-list > *', div)
-                .map(span => 1 && {
-                    noteName: $$('select.pitched-note', span)[0].value,
-                    pitchBend: $$('input.pitch-bend', span)[0].value,
-                }),
-        };
-
-        let gui = {
-            smfInput: $$('input[type="file"].midi-file', form)[0],
-            sf2Input: $$('input[type="file"].soundfont-file', form)[0],
-            smfFieldSet: $$('fieldset.needs-smf', form)[0],
-            ticksPerBeatHolder: $$('.ticks-per-beat', form)[0],
-            tempoHolder: $$('.tempo-holder', form)[0],
-            trackList: $$('tbody.current-tracks', form)[0],
-            trackTrRef: $$('.current-tracks tr')[0].cloneNode(true),
-            regionListCont: $$('.region-list', form)[0],
-            regionRef: $$('.region-list > *', form)[0].cloneNode(true),
-            pitchBendRef: $$('.pitch-bend-list > *', form)[0].cloneNode(true),
-            addAnotherRegionBtn: $$('button.add-another-region', form)[0],
-            resetRegionsBtn: $$('button.reset-regions', form)[0],
-            convertBtn: $$('button.convert-to-arabic', form)[0],
-            removeMetaFlag: $$('input.remove-meta', form)[0],
-            soundfontLoadingImg: $$('img.soundfont-loading', form)[0],
-            playInputBtn: $$('button.play-input', form)[0],
-            playOutputBtn: $$('button.play-output', form)[0],
-            /** @debug */
-            testSf3DecodingBtn: $$('button.test-sf3-decoding', form)[0],
-        };
-
-        let collectParams = (gui) => 1 && {
-            scaleRegions: $$(':scope > *', gui.regionListCont).map(collectRegion),
-            oudTrackNum: $$('[name="isOudTrack"]:checked', gui.trackList).map(r => +r.value)[0],
-            tablaTrackNum: $$('[name="isTablaTrack"]:checked', gui.trackList).map(r => +r.value || null)[0],
-            configTracks: $$(':scope > tr.real', gui.trackList).map((t,i) => 1 && {
-                velocityFactor: $$('.holder.original-volume', t)[0].innerHTML <= 0 ? 1 :
-                    $$('input.track-volume', t)[0].value /
-                    $$('.holder.original-volume', t)[0].innerHTML,
-            }),
-            removeMeta: gui.removeMetaFlag.checked,
-        };
-
         let getTotalTicks = function (events) {
             return events.reduce((sum, e) => sum + e.delta, 0);
         };
-
-        let isNoteOn = (readerEvent) =>
-            readerEvent.type === 'MIDI' &&
-            readerEvent.midiEventType === 9 &&
-            readerEvent.parameter2 > 0;
 
         let getTotalNotes = function (events) {
             return events.filter(isNoteOn).length;
@@ -421,7 +418,9 @@
                         .forEach(e => e.midiChannel = 10);
                 }
                 smfCopy.tracks[trackNum].events.filter(isNoteOn)
-                    .forEach(e => e.parameter2 = Math.ceil(e.parameter2 * configTrack.velocityFactor));
+                    .forEach(e => e.parameter2 = scaleVelocity(
+                        e.parameter2, configTrack.velocityFactor
+                    ));
                 console.log('track SMF', smfCopy);
                 playSmf(smfCopy, ranamSf, btn);
                 return true;

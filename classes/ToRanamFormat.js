@@ -5,22 +5,12 @@
  *
  * @param params = index.js -> collectParams()
  */
-define([], () => (smfReader, formParams) => {
 
-    let isNoteOn = (readerEvent) =>
-        readerEvent.type === 'MIDI' &&
-        readerEvent.midiEventType === 9 &&
-        readerEvent.parameter2 > 0;
+var klesun = Klesun();
+klesun.requires('./MidiUtil.js').then = (MidiUtil) =>
+klesun.whenLoaded = () => (smfReader, formParams) => {
 
-    let isNoteOff = (readerEvent) =>
-        readerEvent.type === 'MIDI' && (
-            readerEvent.midiEventType === 8 ||
-            readerEvent.midiEventType === 9 && readerEvent.parameter2 === 0
-        );
-
-    let isPitchBend = (readerEvent) =>
-        readerEvent.type === 'MIDI' &&
-        readerEvent.midiEventType === 14;
+    let {isNoteOn, isNoteOff, isPitchBend, scaleVelocity} = MidiUtil();
 
     /** take events that happen at current tick */
     let takeTickEvents = function(events, startOffset)
@@ -219,7 +209,8 @@ define([], () => (smfReader, formParams) => {
                 }
                 let parameter2 = readerEvent.parameter2;
                 if (isNoteOn(readerEvent)) {
-                    parameter2 = Math.round(parameter2 * formParams.configTracks[trackNum].velocityFactor);
+                    let veloFactor = formParams.configTracks[trackNum].velocityFactor;
+                    parameter2 = scaleVelocity(parameter2, veloFactor);
                 }
                 return new Midi.Event({
                     type: readerEvent.midiEventType * 16,
@@ -345,4 +336,4 @@ define([], () => (smfReader, formParams) => {
     };
 
     return main();
-});
+};
