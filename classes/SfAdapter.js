@@ -4,7 +4,7 @@
  * by colinbdclark and transforms result to convenient format
  * @param {Uint8Array} $sf2Buf
  */
-define([], () => (sf2Buf, audioCtx) => {
+define([], () => (sf2Buf, audioCtx, isSf3) => {
 
     let range = (l, r) => new Array(r - l).fill(0).map((_, i) => l + i);
 
@@ -17,7 +17,9 @@ define([], () => (sf2Buf, audioCtx) => {
     };
 
     let view = new Uint8Array(sf2Buf);
-    let root = new sf2.Parser(view);
+    let root = new sf2.Parser(view, {
+        parserOptions: {isSf3: isSf3},
+    });
     root.parse();
     for (let sampleHeader of root.sampleHeader) {
         sampleHeader.sampleName = cleanText(sampleHeader.sampleName);
@@ -29,14 +31,15 @@ define([], () => (sf2Buf, audioCtx) => {
     console.log('sf2 flat: ', root);
 
     /**
-     * @param {Int16Array} sf2Sample
+     * @param {ArrayBuffer} sf2Sample
      * @param {ISampleInfo} sampleInfo
      * @return {ArrayBuffer}
      * @see http://soundfile.sapp.org/doc/WaveFormat/
      */
     let sf2ToWav = function(sf2Sample, sampleInfo)
     {
-        let size = sf2Sample.length * 2 + 44; // 44 - RIFF header data
+        let size = sf2Sample.byteLength + 44; // 44 - RIFF header data
+        let sourceView = new DataView(sf2Sample);
         let wavBuf = new ArrayBuffer(size);
         let view = new DataView(wavBuf);
 
@@ -61,8 +64,8 @@ define([], () => (sf2Buf, audioCtx) => {
         view.setInt32(36, 0x64617461, false); // data
         view.setInt32(40, sf2Sample.length * 2, true);
 
-        for (let i = 0; i < sf2Sample.length; ++i) {
-            view.setInt16(44 + i * 2, sf2Sample[i], true);
+        for (let i = 0; i < sf2Sample.byteLength; ++i) {
+            view.setInt8(44 + i, sourceView.getInt8(i));
         }
 
         return wavBuf;
@@ -253,12 +256,17 @@ define([], () => (sf2Buf, audioCtx) => {
 
         for (let pres_idx = 0; pres_idx < root.presetHeader.length; ++pres_idx) {
             let pres = root.presetHeader[pres_idx];
+            if ((bankToPresetToData[pres.bank] || {})[pres.preset] !== undefined) {
+                // EOS artifact in sf2-parser has bank 0 and preset 0 and overwrote piano
+                continue;
+            }
+
             let pzone_start_idx = pres.presetBagIndex;
             let pzone_end_idx = pres_idx + 1 < root.presetHeader.length
                 ? root.presetHeader[pres_idx + 1].presetBagIndex
                 : root.presetZone.length; // -1 ?
             // let extendKeyRanges = pres.bank === 0; // no for drums, since they are not pitchable
-            let extendKeyRanges = true;
+            let extendKeyRanges = pres.bank < 128; // 128 - drums
             let propertyBundles = range(pzone_start_idx, pzone_end_idx)
                 .map(pzone_idx => {
                     let gen_start_idx = root.presetZone[pzone_idx].presetGeneratorIndex;
@@ -305,9 +313,14 @@ define([], () => (sf2Buf, audioCtx) => {
     let filterSamples = function(params)
     {
         let {bank, preset, semitone, velocity} = params;
-        let presets, samples;
-        if (!(presets = bankToPresetToSamples[bank])) return [];
-        if (!(samples = presets[preset])) return [];
+        let presets = bankToPresetToSamples[bank];
+        let samples = presets ? presets[preset] : undefined;
+        if (!samples) {
+            let fallbackBank = bank < 128 ? 0 : 128; // 128 - drums
+            presets = bankToPresetToSamples[fallbackBank];
+            samples = presets ? presets[preset] : undefined;
+        }
+        if (!samples) return [];
 
         let filtered = samples
             .map(s => s.generators
@@ -341,6 +354,12 @@ define([], () => (sf2Buf, audioCtx) => {
         saveAs(blob, fileName + '.wav', true);
     };
 
+    let saveOggToDisc = function(buff, fileName = 'sample')
+    {
+        let blob = new Blob([buff], {type: "ogg/binary"});
+        saveAs(blob, fileName + '.ogg', true);
+    };
+
     let getSampleAudio = function(sampleNumber, then) {
         if (sampleToAudio[sampleNumber]) {
             then(sampleToAudio[sampleNumber]);
@@ -351,9 +370,14 @@ define([], () => (sf2Buf, audioCtx) => {
                 awaiting[sampleNumber] = [then];
                 let sampleInfo = root.sampleHeader[sampleNumber];
                 let sampleBuf = root.sample[sampleNumber];
-                let wavBuf = sf2ToWav(sampleBuf, sampleInfo);
 
-                audioCtx.decodeAudioData(wavBuf, (decoded) => {
+                let fullBuf;
+                if (isSf3) {
+                    fullBuf = sampleBuf;
+                } else {
+                    fullBuf = sf2ToWav(sampleBuf, sampleInfo);
+                }
+                audioCtx.decodeAudioData(fullBuf, (decoded) => {
                     awaiting[sampleNumber].forEach(a => a(decoded));
                     delete awaiting[sampleNumber];
                     sampleToAudio[sampleNumber] = decoded;

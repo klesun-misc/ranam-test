@@ -1,7 +1,7 @@
 
 (function(){
     let klesun = Klesun();
-    klesun.requires('./classes/Sf2Adapter.js').then = (Sf2Adapter) =>
+    klesun.requires('./classes/SfAdapter.js').then = (SfAdapter) =>
     klesun.requires('./classes/ToRanamFormat.js').then = (ToRanamFormat) =>
     klesun.requires('./classes/PlaySmf.js').then = (PlaySmf) =>
     klesun.requires('./classes/Synth.js').then = (Synth) =>
@@ -10,12 +10,12 @@
         "use strict";
         let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
         let audioCtx = new AudioContext();
-        let fluidSf2 = null;
+        let fluidSf = null;
         let {http, opt, promise} = Tls();
         let stopPlayback = () => {};
         
         let preloadSamples = (smfReader, synth, ranamSf2) => promise(done => {
-            let fluidOk = !fluidSf2 ? true : false;
+            let fluidOk = !fluidSf ? true : false;
             let ranamOk = false;
             let report = () => {
                 if (fluidOk && ranamOk) {
@@ -29,14 +29,14 @@
                 ranamOk = true;
                 report();
             });
-            opt(fluidSf2).get = (fl) => fl.onIdle(() => {
+            opt(fluidSf).get = (fl) => fl.onIdle(() => {
                 fluidOk = true;
                 report();
             });
         });
 
         let playSmf = (smf, sf2, btn) => {
-            let synth = Synth(audioCtx, currentSf2, fluidSf2);
+            let synth = Synth(audioCtx, ranamSf, fluidSf);
             preloadSamples(smf, synth, sf2).then = () => {
                 stopPlayback();
                 form.classList.add('playing');
@@ -58,7 +58,7 @@
             };
         };
         let currentSmf = null;
-        let currentSf2 = null;
+        let ranamSf = null;
 
         let loadSelectedFile = function (fileInfo, whenLoaded) {
             if (!fileInfo) {
@@ -182,6 +182,8 @@
             soundfontLoadingImg: $$('img.soundfont-loading', form)[0],
             playInputBtn: $$('button.play-input', form)[0],
             playOutputBtn: $$('button.play-output', form)[0],
+            /** @debug */
+            testSf3DecodingBtn: $$('button.test-sf3-decoding', form)[0],
         };
 
         let collectParams = (gui) => 1 && {
@@ -383,7 +385,7 @@
             let possible = false;
             switch (null) {
                 case currentSmf: alert('Load MIDI file first!'); break;
-                case currentSf2: alert('Load .sf2 first!'); break;
+                case ranamSf: alert('Load .sf2 first!'); break;
                 case configTrack: alert('No such track ' + trackNum + '!'); break;
                 default: possible = true;
             }
@@ -402,8 +404,8 @@
                 }
                 smfCopy.tracks[trackNum].events.filter(isNoteOn)
                     .forEach(e => e.parameter2 = Math.round(e.parameter2 * configTrack.volume / 100));
-                console.debug('track SMF', smfCopy);
-                playSmf(smfCopy, currentSf2, btn);
+                console.log('track SMF', smfCopy);
+                playSmf(smfCopy, ranamSf, btn);
                 return true;
             } else {
                 return false;
@@ -472,7 +474,7 @@
                 if (!currentSmf) {
                     alert('MIDI file not loaded');
                 } else {
-                    playSmf(currentSmf, currentSf2, gui.playInputBtn);
+                    playSmf(currentSmf, ranamSf, gui.playInputBtn);
                 }
             };
             gui.playOutputBtn.onclick = () => {
@@ -483,7 +485,7 @@
                     let buff = ToRanamFormat(currentSmf, params);
                     if (buff) {
                         let parsed = Ns.Libs.SMFreader(buff);
-                        playSmf(parsed, currentSf2, gui.playOutputBtn);
+                        playSmf(parsed, ranamSf, gui.playOutputBtn);
                     }
                 }
             };
@@ -505,13 +507,15 @@
                 });
             gui.sf2Input.value = null;
             gui.sf2Input.onchange = (inputEvent) => {
-                if (!gui.sf2Input.files[0]) {
+                let file = gui.sf2Input.files[0];
+                if (!file) {
                     return; // user pressed "Cancel"
                 }
+                let isSf3 = file.name.endsWith('.sf3');
                 gui.soundfontLoadingImg.style.display = 'inline-block';
-                loadSelectedFile(gui.sf2Input.files[0], (sf2Buf) => {
+                loadSelectedFile(file, (sf2Buf) => {
                     gui.soundfontLoadingImg.style.display = 'none';
-                    currentSf2 = Sf2Adapter(sf2Buf, audioCtx);
+                    ranamSf = SfAdapter(sf2Buf, audioCtx, isSf3);
                     initPlaybackBtns();
                 });
             };
@@ -543,24 +547,33 @@
                     });
             };
             //let sf2Url = './sf2/ranam_full.sf2';
-            let sf2Url = 'https://dl.dropbox.com/s/ighf7wpdw2yfu6x/ranam_full.sf2?dl=0';
-            http(sf2Url, 'arraybuffer').then = (sf2Buf) => {
+            let sfRanamUrl = 'https://dl.dropbox.com/s/ighf7wpdw2yfu6x/ranam_full.sf2?dl=0';
+            let isSf3Ranam = false;
+            http(sfRanamUrl, 'arraybuffer').then = (sfBuf) => {
                 let statusDom = $$('.sf2-http-status')[0];
                 statusDom.style.color = 'rgb(2, 255, 0)';
-                statusDom.innerHTML = 'Loaded Ranam .sf2 ' + sf2Buf.byteLength + ' bytes';
-                if (!currentSf2) {
-                    currentSf2 = Sf2Adapter(sf2Buf, audioCtx);
+                statusDom.innerHTML = 'Loaded Ranam .sf2 ' + sfBuf.byteLength + ' bytes';
+                if (!ranamSf) {
+                    ranamSf = SfAdapter(sfBuf, audioCtx, isSf3Ranam);
                     initPlaybackBtns();
                 }
             };
-            let sf2FluidUrl = 'https://dl.dropbox.com/s/i1vq6ja3al14o57/fluid.sf2?dl=0';
-            //let sf2FluidUrl = 'http://midiana.lv/unv/soundfonts/fluid.sf2';
-            http(sf2FluidUrl, 'arraybuffer').then = (sf2Buf) => {
+
+            let sfFluidUrl = 'https://dl.dropbox.com/s/dm2ocmb96nkl458/fluid.sf3?dl=0';
+            let isSf3Fluid = true;
+            http(sfFluidUrl, 'arraybuffer').then = (sfBuf) => {
                 let statusDom = $$('.sf2-http-status-fluid')[0];
                 statusDom.style.color = 'rgb(2, 255, 0)';
-                statusDom.innerHTML = 'Loaded General .sf2 ' + sf2Buf.byteLength + ' bytes';
-                if (!fluidSf2) {
-                    fluidSf2 = Sf2Adapter(sf2Buf, audioCtx);
+                statusDom.innerHTML = 'Loaded General .sf2 ' + sfBuf.byteLength + ' bytes';
+                if (!fluidSf) {
+                    fluidSf = SfAdapter(sfBuf, audioCtx, isSf3Fluid);
+                    initPlaybackBtns();
+                    gui.testSf3DecodingBtn.onclick = () => {
+                        let params = {bank: 0, preset: 0, semitone: 60, velocity: 100};
+                        fluidSf.getSampleData(params, (samples) => {
+                            console.log('loaded sample for', params, samples);
+                        });
+                    };
                 }
             };
         };
