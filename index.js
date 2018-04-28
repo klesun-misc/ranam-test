@@ -9,6 +9,7 @@
     klesun.requires('./classes/MidiUtil.js').then = (MidiUtil) =>
     klesun.requires('./classes/Gui.js').then = (Gui) =>
     klesun.requires('./classes/ScaleMapping.js').then = (ScaleMapping) =>
+    klesun.requires('./classes/NoteDisplay.js').then = (NoteDisplay) =>
     klesun.whenLoaded = () => (form) => {
         "use strict";
         let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
@@ -352,6 +353,7 @@
             $$(':scope > div', gui.regionListCont)
                 .forEach(div => updateScaleTimeRanges(div));
             updateScaleTimeRanges(gui.regionRef);
+            NoteDisplay(gui.noteDisplayCont, smf);
         };
 
         let initPlaybackBtns = function() {

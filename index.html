@@ -120,6 +120,78 @@
         <button type="button" class="play-output" onclick="alert('Load soundfont first')">Play converted .mid</button>
         <button type="button" title="Upload General MIDI first!" class="convert-to-arabic">Save converted .mid</button>
     </fieldset>
+    <div style="overflow: auto">
+        <div class="note-display-cont">
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+
+            <div class="ivory"></div> <!-- Do -->
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+
+            <div class="ivory"></div>  <!-- Do -->
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+
+            <div class="ivory"></div>  <!-- Do -->
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+
+            <div class="ivory"></div>  <!-- Do -->
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+
+            <div class="ivory"></div>  <!-- Do -->
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+            <div class="ebony"></div>
+            <div class="ivory"></div>
+        </div>
+    </div>
     <div class="playback-config">
         <h3>Playback (DEBUG)</h3>
         <p class="sf2-http-status" style="color: yellow;">Loading Oud/Tabla soundfont via HTTP... (~10 MiB)</p>
@@ -211,6 +283,48 @@
     form.playing button.destroy-when-music-stops {
         box-shadow: 0 0 13px 4.5px rgb(189, 98, 195);
     }
+    .note-display-cont {
+        min-width: 100%;
+    }
+    .note-display-cont > .ebony {
+        background-color: #9a9a9a;
+    }
+    .note-display-cont > .ivory {
+        background-color: #e6e6e6;
+    }
+    .note-display-cont > * {
+        border: 1px solid black;
+        height: 8px;
+        padding: 0;
+        position: relative;
+    }
+    .note-display-cont > div:hover {
+        filter: brightness(1.2);
+    }
+    .note-display-cont > * > * {
+        box-shadow:inset 0px 0px 0px 1px #cdcdcd;
+    }
+    .note-display-cont > * > div:hover {
+        filter: saturate(3.5);
+    }
+
+    .colorize-channel[data-channel="0"] { background-color: rgb(192, 0, 0); }
+    .colorize-channel[data-channel="1"] { background-color: rgb(0, 148, 0); }
+    .colorize-channel[data-channel="2"] { background-color: rgb(60, 60, 255); }
+    .colorize-channel[data-channel="3"] { background-color: rgb(152, 152, 0); }
+    .colorize-channel[data-channel="4"] { background-color: rgb(0, 192, 192); }
+    .colorize-channel[data-channel="5"] { background-color: rgb(192, 0, 192); }
+    .colorize-channel[data-channel="6"] { background-color: rgb(255, 128, 0); }
+    .colorize-channel[data-channel="7"] { background-color: rgb(91, 0, 255); }
+    .colorize-channel[data-channel="8"] { background-color: rgb(0, 0, 0); }
+    .colorize-channel[data-channel="9"] { background-color: rgb(128, 128, 128); }
+    .colorize-channel[data-channel="10"] { background-color: rgb(127, 255, 0); }
+    .colorize-channel[data-channel="11"] { background-color: rgb(255, 0, 255); }
+    .colorize-channel[data-channel="12"] { background-color: rgb(64, 128, 255); }
+    .colorize-channel[data-channel="13"] { background-color: rgb(192, 128, 0); }
+    .colorize-channel[data-channel="14"] { background-color: rgb(130, 200, 0); }
+    .colorize-channel[data-channel="15"] { background-color: rgb(255, 64, 0); }
+
 </style>
 
 </html>

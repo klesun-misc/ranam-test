@@ -92,6 +92,8 @@ define([], () => (...ctorArgs) => {
                 v.forEach(c => dom.appendChild(c));
             } else if (k === 'style') {
                 Object.keys(v).forEach(k => dom.style[k] = v[k]);
+            } else if (k === 'classList') {
+                v.forEach(c => dom.classList.add(c));
             } else {
                 dom[k] = v;
                 if (typeof v !== 'function') {
@@ -107,5 +109,6 @@ define([], () => (...ctorArgs) => {
         promise: promise,
         http: http,
         mkDom: mkDom,
+        range: (l, r) => new Array(r - l).fill(0).map((_, i) => l + i),
     };
 });
