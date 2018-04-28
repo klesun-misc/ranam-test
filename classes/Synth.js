@@ -107,7 +107,7 @@ define([], () => (audioCtx, sf2Adapter, fluidSf2) => {
                 params.preset = 25;
                 useRanamSf2 = true;
             } else if (midiChannel === 10) { // Ranam Tabla
-                params.bank = 0;
+                params.bank = 128;
                 params.preset = 0;
                 useRanamSf2 = true;
             } else if (midiChannel === 9) {
