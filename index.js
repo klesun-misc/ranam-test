@@ -7,13 +7,19 @@
     klesun.requires('./classes/Synth.js').then = (Synth) =>
     klesun.requires('./classes/Tls.js').then = (Tls) =>
     klesun.requires('./classes/MidiUtil.js').then = (MidiUtil) =>
+    klesun.requires('./classes/Gui.js').then = (Gui) =>
+    klesun.requires('./classes/ScaleMapping.js').then = (ScaleMapping) =>
     klesun.whenLoaded = () => (form) => {
         "use strict";
         let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
-        let audioCtx = new AudioContext();
-        let fluidSf = null;
+
         let {http, opt, promise} = Tls();
         let {isNoteOn, scaleVelocity} = MidiUtil();
+        let {gui, collectRegion, collectParams} = Gui();
+        let {getScaleKeyNotes, getPitchResultNote} = ScaleMapping();
+
+        let audioCtx = new AudioContext();
+        let fluidSf = null;
         let stopPlayback = () => {};
         
         let preloadSamples = (smfReader, synth, ranamSf2) => promise(done => {
@@ -36,53 +42,6 @@
                 report();
             });
         });
-
-        let gui = {
-            smfInput: $$('input[type="file"].midi-file', form)[0],
-            sf2Input: $$('input[type="file"].soundfont-file', form)[0],
-            smfFieldSet: $$('fieldset.needs-smf', form)[0],
-            ticksPerBeatHolder: $$('.ticks-per-beat', form)[0],
-            tempoHolder: $$('.tempo-holder', form)[0],
-            trackList: $$('tbody.current-tracks', form)[0],
-            trackTrRef: $$('.current-tracks tr')[0].cloneNode(true),
-            regionListCont: $$('.region-list', form)[0],
-            regionRef: $$('.region-list > *', form)[0].cloneNode(true),
-            pitchBendRef: $$('.pitch-bend-list > *', form)[0].cloneNode(true),
-            addAnotherRegionBtn: $$('button.add-another-region', form)[0],
-            resetRegionsBtn: $$('button.reset-regions', form)[0],
-            convertBtn: $$('button.convert-to-arabic', form)[0],
-            removeMetaFlag: $$('input.remove-meta', form)[0],
-            soundfontLoadingImg: $$('img.soundfont-loading', form)[0],
-            playInputBtn: $$('button.play-input', form)[0],
-            playOutputBtn: $$('button.play-output', form)[0],
-            /** @debug */
-            testSf3DecodingBtn: $$('button.test-sf3-decoding', form)[0],
-        };
-
-        let collectRegion = div => 1 && {
-            scale: $$('select.scale', div)[0].value,
-            startingNote: $$('select.key-note', div)[0].value,
-            fromToFormat: $$('select.from-to-format', div)[0].value,
-            from: $$('input.from', div)[0].value,
-            to: $$('input.to', div)[0].value,
-            pitchBends: $$('.pitch-bend-list > *', div)
-                .map(span => 1 && {
-                    noteName: $$('select.pitched-note', span)[0].value,
-                    pitchBend: $$('input.pitch-bend', span)[0].value,
-                }),
-        };
-
-        let collectParams = (gui) => 1 && {
-            scaleRegions: $$(':scope > *', gui.regionListCont).map(collectRegion),
-            oudTrackNum: $$('[name="isOudTrack"]:checked', gui.trackList).map(r => +r.value)[0],
-            tablaTrackNum: $$('[name="isTablaTrack"]:checked', gui.trackList).map(r => +r.value || null)[0],
-            configTracks: $$(':scope > tr.real', gui.trackList).map((t,i) => 1 && {
-                velocityFactor: $$('.holder.original-volume', t)[0].innerHTML <= 0 ? 1 :
-                    $$('input.track-volume', t)[0].value /
-                    $$('.holder.original-volume', t)[0].innerHTML,
-            }),
-            removeMeta: gui.removeMetaFlag.checked,
-        };
 
         let playSmf = (smf, sf2, btn) => {
             let synth = Synth(audioCtx, ranamSf, fluidSf);
@@ -127,78 +86,6 @@
         {
             let blob = new Blob([buff], {type: "midi/binary"});
             saveAs(blob, 'ranam_song.mid', true);
-        };
-
-        let scaleMapping = {
-            Bayati: {
-                Do: [{noteName: 'Re', pitchBend: -0.25, pitched: 'Re ½b'}],
-                Re: [{noteName: 'Mi', pitchBend: -0.25, pitched: 'Mi ½b'}],
-                Mi: [{noteName: 'Fa#', pitchBend: -0.25, pitched: 'Fa ½#'}],
-                Fa: [{noteName: 'So', pitchBend: -0.25, pitched: 'So ½b'}],
-                So: [{noteName: 'La', pitchBend: -0.25, pitched: 'La ½b'}],
-                La: [{noteName: 'Si', pitchBend: -0.25, pitched: 'Si ½b'}],
-                Si: [{noteName: 'Do#', pitchBend: -0.25, pitched: 'Do ½#'}],
-            },
-            Saba: {
-                Do: [{noteName: 'Re', pitchBend: -0.25, pitched: 'Re ½b'}],
-                Re: [{noteName: 'Mi', pitchBend: -0.25, pitched: 'Mi ½b'}],
-                Mi: [{noteName: 'Fa#', pitchBend: -0.25, pitched: 'Fa ½#'}],
-                Fa: [{noteName: 'So', pitchBend: -0.25, pitched: 'So ½b'}],
-                So: [{noteName: 'La', pitchBend: -0.25, pitched: 'La ½b'}],
-                La: [{noteName: 'Si', pitchBend: -0.25, pitched: 'Si ½b'}],
-                Si: [{noteName: 'Do#', pitchBend: -0.25, pitched: 'Do ½#'}],
-            },
-            Sikah: {
-                Do: [{noteName: 'Do', pitchBend: -0.25, pitched: 'Do ½b'}],
-                Re: [{noteName: 'Re', pitchBend: -0.25, pitched: 'Re ½b'}],
-                Mi: [{noteName: 'Mi', pitchBend: -0.25, pitched: 'Mi ½b'}],
-                Fa: [{noteName: 'Fa', pitchBend: -0.25, pitched: 'Fa ½b'}],
-                So: [{noteName: 'So', pitchBend: -0.25, pitched: 'So ½b'}],
-                La: [{noteName: 'La', pitchBend: -0.25, pitched: 'La ½b'}],
-                Si: [{noteName: 'Si', pitchBend: -0.25, pitched: 'Si ½b'}],
-            },
-            Rast: {
-                Do: [{noteName: 'Mi', pitchBend: -0.25, pitched: 'Mi ½b'}, {
-                    noteName: 'Si',
-                    pitchBend: -0.25,
-                    pitched: 'Si ½b'
-                }],
-                Re: [{noteName: 'Fa#', pitchBend: -0.25, pitched: 'Fa ½#'}, {
-                    noteName: 'Do#',
-                    pitchBend: -0.25,
-                    pitched: 'Do ½#'
-                }],
-                Mi: [{noteName: 'So#', pitchBend: -0.25, pitched: 'So ½#'}, {
-                    noteName: 'Re#',
-                    pitchBend: -0.25,
-                    pitched: 'Re ½#'
-                }],
-                Fa: [{noteName: 'La', pitchBend: -0.25, pitched: 'La ½b'}, {
-                    noteName: 'Mi',
-                    pitchBend: -0.25,
-                    pitched: 'Mi ½b'
-                }],
-                So: [{noteName: 'Si', pitchBend: -0.25, pitched: 'Si ½b'}, {
-                    noteName: 'Fa#',
-                    pitchBend: -0.25,
-                    pitched: 'Fa ½#'
-                }],
-                La: [{noteName: 'Do#', pitchBend: -0.25, pitched: 'Do ½#'}, {
-                    noteName: 'So#',
-                    pitchBend: -0.25,
-                    pitched: 'So ½#'
-                }],
-                Si: [{noteName: 'Re#', pitchBend: -0.25, pitched: 'Re ½#'}, {
-                    noteName: 'La',
-                    pitchBend: -0.25,
-                    pitched: 'La ½#'
-                }],
-            },
-            // no pitch bend in the following
-            Hijaz: {},
-            Nahawand: {},
-            Kurd: {},
-            Ajam: {},
         };
 
         let getTotalTicks = function (events) {
@@ -268,38 +155,6 @@
             onchange();
         };
 
-        let getFractionChar = function (num) {
-            if (num == '1') {
-                return '';
-            } else if (num == '0.75') {
-                return '¾';
-            } else if (num == '0.5') {
-                return '½';
-            } else if (num == '0.25') {
-                return '¼';
-            } else if (Math.abs(num - 0.3333333333) < 0.0000001) {
-                return '⅓';
-            } else if (Math.abs(num - 0.6666666666) < 0.0000001) {
-                return '⅔';
-            } else {
-                return num + '';
-            }
-        };
-
-        let getPitchResultNote = function (noteName, pitchBend) {
-            let clean = noteName.slice(0, 2);
-            let sign = noteName.slice(2);
-            if (pitchBend == 0) {
-                return noteName;
-            } else if (sign == '#' && pitchBend < 0) {
-                return clean + ' ' + getFractionChar(-pitchBend * 2) + sign;
-            } else if (sign == '' && pitchBend < 0) {
-                return clean + ' ' + getFractionChar(-pitchBend * 2) + 'b';
-            } else {
-                return '';
-            }
-        };
-
         let addPitchBendNote = function (pitchBendList) {
             let scaleBlock = pitchBendList.parentNode.parentNode;
             let infoBlock = $$('.no-pitch-bend-msg', scaleBlock)[0];
@@ -329,7 +184,7 @@
             pitchBendList.innerHTML = '';
             let scale = $$('select.scale', div)[0].value;
             let keyNote = $$('select.key-note', div)[0].value;
-            let keyNotes = scaleMapping[scale];
+            let keyNotes = getScaleKeyNotes(scale);
             pitchBendList.innerHTML = '';
             if (keyNotes) {
                 for (let pitchInfo of keyNotes[keyNote] || []) {
