@@ -101,7 +101,7 @@
 
                 let playback = PlaySmf(smf, synth, () => gui.collectParams(gui));
                 playback.then = playbackFinished;
-                switchWithStopBtn(btn);
+                gui.switchWithStopBtn(btn).then = () => stopPlayback();
                 let ticksToTempo = getTicksToTempo(smf);
                 stopAnimation = opt(noteDisplay).map(disp => disp.animatePointer(
                     ticksToTempo, smf.ticksPerBeat)).def(() => {});
@@ -135,48 +135,21 @@
             saveAs(blob, 'ranam_song.mid', true);
         };
 
-        let switchWithStopBtn = function(playBtn) {
-            playBtn.classList.add('current-source');
-            let stopBtn = document.createElement('button');
-            stopBtn.innerHTML = 'Stop';
-            stopBtn.classList.add('destroy-when-music-stops');
-            stopBtn.setAttribute('type', 'button');
-            playBtn.parentNode.insertBefore(stopBtn, playBtn);
-            stopBtn.onclick = () => stopPlayback();
-        };
-
-        let updateScaleTimeRanges = function (div) {
-            let formatSelect = $$('select.from-to-format', div)[0];
-            let onchange = () => {
-                let step = 1;
-                let max = 1;
-                let formData = gui.collectParams(gui);
-                let regionData = gui.collectRegion(div);
-                let ticksPerBeat = opt(currentSmf).map(smf => smf.ticksPerBeat).def(384);
-                let oudEvents = opt(currentSmf).map(smf => smf.tracks[formData.oudTrackNum]).fmp(t => t.events);
-                let totalTicks = getTotalTicks(oudEvents);
-                let totalNotes = getTotalNotes(oudEvents);
-
-                let fromProg = regionData.from / $$('input.from', div)[0].getAttribute('max');
-                let toProg = regionData.to / $$('input.to', div)[0].getAttribute('max');
-
-                if (regionData.fromToFormat === 'Notes') {
-                    step = 1;
-                    max = totalNotes;
-                } else if (regionData.fromToFormat === 'Ticks') {
-                    step = ticksPerBeat;
-                    max = totalTicks;
-                }
-                $$('input.from', div)[0].setAttribute('step', step);
-                $$('input.from', div)[0].setAttribute('max', max);
-                $$('input.from', div)[0].value = Math.round(max * fromProg / step) * step;
-
-                $$('input.to', div)[0].setAttribute('step', step);
-                $$('input.to', div)[0].setAttribute('max', max);
-                $$('input.to', div)[0].value = Math.round(max * toProg / step) * step || max;
+        /**
+         * Adds some denormalized info to each track.
+         * Maybe I'll also make it provide notes separately
+         * from other events and group by absolute ticks...
+         */
+        let SmfAdapter = function(smf) {
+            return {
+                tpb: smf.ticksPerBeat,
+                tracks: smf.tracks.map(t => {
+                    return {
+                        totalTicks: getTotalTicks(t.events),
+                        totalNotes: getTotalNotes(t.events),
+                    };
+                }),
             };
-            formatSelect.onchange = onchange;
-            onchange();
         };
 
         let addPitchBendNote = function (pitchBendList) {
@@ -226,6 +199,9 @@
         };
 
         let initScale = function (div) {
+            opt(currentSmf).map(SmfAdapter).get = smfAdapter =>
+                gui.updateScaleTimeRanges(div, smfAdapter);
+
             let onchange = () => updateScaleInfo(div);
             $$('select.scale', div)[0].onchange = onchange;
             $$('select.key-note', div)[0].onchange = onchange;
@@ -315,6 +291,7 @@
         };
 
         let populateSmfGui = function(smf) {
+            let smfAdapter = SmfAdapter(smf);
             gui.trackList.innerHTML = '';
             gui.smfFieldSet.removeAttribute('disabled');
             gui.smfFieldSet.removeAttribute('title');
@@ -332,7 +309,7 @@
                         });
                     });
                 $$(':scope > div', gui.regionListCont)
-                    .forEach(div => updateScaleTimeRanges(div));
+                    .forEach(div => gui.updateScaleTimeRanges(div, smfAdapter));
             };
             let lastVisionFlagVal = true;
             for (let i = 0; i < smf.tracks.length; ++i) {
@@ -411,8 +388,7 @@
             gui.tempoInput.onchange = () => stopAnimation();
 
             $$(':scope > div', gui.regionListCont)
-                .forEach(div => updateScaleTimeRanges(div));
-            updateScaleTimeRanges(gui.regionRef);
+                .forEach(div => gui.updateScaleTimeRanges(div, smfAdapter));
             noteDisplay = NoteDisplay(gui.noteDisplayCont, smf);
             noteDisplay.onNoteClick = (note) => opt(ranamSf).get = (sf) => {
                 let synth = Synth(audioCtx, sf, fluidSf);
@@ -490,8 +466,8 @@
             initScale($$(':scope > *', gui.regionListCont)[0]);
             gui.addAnotherRegionBtn.onclick = () => {
                 let cloned = gui.regionRef.cloneNode(true);
-                initScale(cloned);
                 gui.regionListCont.appendChild(cloned);
+                initScale(cloned);
             };
             gui.resetRegionsBtn.onclick = () => {
                 $$(':scope > *', gui.regionListCont).slice(1)

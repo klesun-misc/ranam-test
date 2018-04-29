@@ -8,7 +8,7 @@ klesun.requires('./Tls.js').then = (Tls) =>
 klesun.whenLoaded = () => (form) => {
 
     let $$ = (s, root) => [...(root || document).querySelectorAll(s)];
-    let {mkDom} = Tls();
+    let {mkDom, promise} = Tls();
 
     let smfInput = $$('input[type="file"].midi-file', form)[0];
     let sf2Input = $$('input[type="file"].soundfont-file', form)[0];
@@ -86,10 +86,54 @@ klesun.whenLoaded = () => (form) => {
         }),
     };
 
+    let switchWithStopBtn = (playBtn) => promise(done => {
+        playBtn.classList.add('current-source');
+        let stopBtn = document.createElement('button');
+        stopBtn.innerHTML = 'Stop';
+        stopBtn.classList.add('destroy-when-music-stops');
+        stopBtn.setAttribute('type', 'button');
+        playBtn.parentNode.insertBefore(stopBtn, playBtn);
+        stopBtn.onclick = () => done(123);
+    });
+
+    let updateScaleTimeRanges = function (div, smfAdapter) {
+        let formData = collectParams();
+        let ticksPerBeat = smfAdapter.tpb;
+        let totalTicks = smfAdapter.tracks[formData.oudTrackNum].totalTicks;
+        let totalNotes = smfAdapter.tracks[formData.oudTrackNum].totalNotes;
+
+        let formatSelect = $$('select.from-to-format', div)[0];
+        let onchange = () => {
+            let step = 1;
+            let max = 1;
+            let regionData = collectRegion(div);
+            let fromProg = regionData.from / $$('input.from', div)[0].getAttribute('max');
+            let toProg = regionData.to / $$('input.to', div)[0].getAttribute('max');
+
+            if (regionData.fromToFormat === 'Notes') {
+                step = 1;
+                max = totalNotes;
+            } else if (regionData.fromToFormat === 'Ticks') {
+                step = ticksPerBeat;
+                max = totalTicks;
+            }
+            $$('input.from', div)[0].setAttribute('step', step);
+            $$('input.from', div)[0].setAttribute('max', max);
+            $$('input.from', div)[0].value = Math.round(max * fromProg / step) * step;
+
+            $$('input.to', div)[0].setAttribute('step', step);
+            $$('input.to', div)[0].setAttribute('max', max);
+            $$('input.to', div)[0].value = Math.round(max * toProg / step) * step || max;
+        };
+        formatSelect.onchange = onchange;
+        onchange();
+    };
+
     return {
-        collectRegion: collectRegion,
         collectParams: collectParams,
         showMessages: showMessages,
+        switchWithStopBtn: switchWithStopBtn,
+        updateScaleTimeRanges: updateScaleTimeRanges,
         // I desire to replace them all with value getters/setters one day
         smfInput: smfInput,
         sf2Input: sf2Input,
