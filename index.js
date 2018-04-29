@@ -23,6 +23,7 @@
         let fluidSf = null;
         let noteDisplay = null;
         let stopPlayback = () => {};
+        let stopAnimation = () => {};
 
         let isMouseDown = false;
         form.onmousedown = (e) => isMouseDown |= e.button === 0;
@@ -98,11 +99,11 @@
                 playback.then = playbackFinished;
                 switchWithStopBtn(btn);
                 let ticksToTempo = getTicksToTempo(smf);
-                let stopScroll = opt(noteDisplay).map(disp => disp.animatePointer(
+                stopAnimation = opt(noteDisplay).map(disp => disp.animatePointer(
                     ticksToTempo, smf.ticksPerBeat)).def(() => {});
                 stopPlayback = () => {
                     playbackFinished();
-                    stopScroll();
+                    stopAnimation();
                     playback.stop();
                 };
             };
@@ -402,6 +403,8 @@
                 gui.discardTempoChangesBtn.style.display = 'none';
                 gui.tempoInput.style.display = 'inline';
             }
+            // probably could reschedule animation instead of completely stopping...
+            gui.tempoInput.onchange = () => stopAnimation();
 
             $$(':scope > div', gui.regionListCont)
                 .forEach(div => updateScaleTimeRanges(div));
