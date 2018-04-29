@@ -88,8 +88,6 @@
                 let playback = PlaySmf(smf, synth, () => collectParams(gui));
                 playback.then = playbackFinished;
                 switchWithStopBtn(btn);
-                //playback.onStep = (ticks, duration) => opt(noteDisplay)
-                //    .get = disp => disp.setPointerAt(ticks, duration);
                 let ticksToTempo = getTicksToTempo(smf);
                 let stopScroll = opt(noteDisplay).map(disp => disp.animatePointer(
                     ticksToTempo, smf.ticksPerBeat)).def(() => {});
@@ -387,8 +385,17 @@
                 .forEach(div => updateScaleTimeRanges(div));
             updateScaleTimeRanges(gui.regionRef);
             noteDisplay = NoteDisplay(gui.noteDisplayCont, smf);
+            noteDisplay.onNoteClick = (note) => opt(ranamSf).get = (sf) => {
+                let synth = Synth(audioCtx, sf, fluidSf);
+                synth.handleMidiEvent({
+                    type: 'MIDI',
+                    midiEventType: 9, midiChannel: note.chan,
+                    parameter1: note.tone, parameter2: note.velo,
+                });
+                setTimeout(() => synth.stopAll(), 500);
+            };
             noteDisplay.onNoteOver = (note) => gui.noteHoverInfoHolder.innerHTML =
-                Object.entries(note).map(([k,v]) => k + ': ' + v).join(' | ');
+                Object.entries(note).map(([k, v]) => k + ': ' + v).join(' | ');
             noteDisplay.onNoteOut = (note) => gui.noteHoverInfoHolder.innerHTML = '...';
         };
 

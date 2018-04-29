@@ -12,6 +12,7 @@ klesun.whenLoaded = () => {
     let {ticksToMillis, isNoteOn, isNoteOff} = MidiUtil();
     let $$ = (s, root) => [...(root || document).querySelectorAll(s)];
 
+    let onNoteClick = (note) => {};
     let onNoteOver = (note) => {};
     let onNoteOut = (note) => {};
     let stopScrolling = () => {};
@@ -90,6 +91,7 @@ klesun.whenLoaded = () => {
                             height: '100%',
                             margin: '0',
                         },
+                        onclick: () => onNoteClick(note),
                         onmouseover: () => onNoteOver(note),
                         onmouseout: () => onNoteOut(note),
                     }));
@@ -168,6 +170,7 @@ klesun.whenLoaded = () => {
         putNotes();
 
         return {
+            set onNoteClick(cb) { onNoteClick = cb; },
             set onNoteOver(cb) { onNoteOver = cb; },
             set onNoteOut(cb) { onNoteOut = cb; },
             animatePointer: (ticksToTempo, ticksPerBeat) => animatePointer(ticksToTempo, ticksPerBeat),
