@@ -58,8 +58,8 @@ klesun.whenLoaded = () => {
 
     let POINTER_OFFSET = 20;
 
-    let toPixels = ticks => POINTER_OFFSET + ticks / 10;
-    let toTicks = pixels => Math.max(0, (pixels - POINTER_OFFSET) * 10);
+    let toPixels = ticks => ticks / 10;
+    let toTicks = pixels => Math.max(0, (pixels) * 10);
 
     return (container, smf) => {
 
@@ -84,7 +84,7 @@ klesun.whenLoaded = () => {
                         style: {
                             position: 'absolute',
                             top: 0,
-                            left: toPixels(time),
+                            left: toPixels(time) + POINTER_OFFSET,
                             width: toPixels(dura),
                             height: '100%',
                             margin: '0',
@@ -92,7 +92,7 @@ klesun.whenLoaded = () => {
                         onmouseover: () => onNoteOver(note),
                         onmouseout: () => onNoteOut(note),
                     }));
-                    let endX = toPixels(time) + toPixels(dura);
+                    let endX = POINTER_OFFSET + toPixels(time) + toPixels(dura);
                     maxX = Math.max(maxX, endX);
                 } else {
                     console.debug('note outside the rows ' + yOffset, note);
@@ -115,7 +115,7 @@ klesun.whenLoaded = () => {
                     let elapsed = window.performance.now() - startTime;
                     let progress = elapsed / duration;
                     let currentTicks = startTicks + progress * (endTicks - startTicks);
-                    scroll.scrollLeft = toPixels(currentTicks) - POINTER_OFFSET;
+                    scroll.scrollLeft = toPixels(currentTicks);
                     let nextTime = startTime + duration * (step + 1) / steps;
                     let timeSkip = nextTime - window.performance.now();
                     nowOrLater(timeSkip).then = () => doNext(step + 1);
@@ -131,7 +131,7 @@ klesun.whenLoaded = () => {
             let tempo = 120;
             let ticks = 0;
             let stopped = false;
-            scroll.scrollLeft = toPixels(0);
+            scroll.scrollLeft = 0;
             let entries = Object.entries(ticksToTempo);
             let startTime = window.performance.now();
             let doNext = (i) => {
