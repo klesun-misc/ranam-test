@@ -8,16 +8,14 @@
     klesun.requires('./classes/Tls.js').then = (Tls) =>
     klesun.requires('./classes/MidiUtil.js').then = (MidiUtil) =>
     klesun.requires('./classes/Gui.js').then = (Gui) =>
-    klesun.requires('./classes/ScaleMapping.js').then = (ScaleMapping) =>
     klesun.requires('./classes/NoteDisplay.js').then = (NoteDisplay) =>
     klesun.whenLoaded = () => (form) => {
         "use strict";
         let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
 
-        let {http, opt, promise} = Tls();
+        let {http, opt, promise, deepCopy} = Tls();
         let {isNoteOn, scaleVelocity} = MidiUtil();
         let gui = Gui(form);
-        let {getScaleKeyNotes, getPitchResultNote} = ScaleMapping();
 
         let audioCtx = new AudioContext();
         let fluidSf = null;
@@ -78,7 +76,7 @@
             }
         };
 
-        let playSmf = (smf, sf2, btn) => {
+        let playSmf = (smf, sf2, btn, animate) => {
             if (!ranamSf || !fluidSf) {
                 gui.showMessages({errors: ['Wait for soundfont data to load!']});
                 return;
@@ -99,8 +97,10 @@
                 playback.then = playbackFinished;
                 gui.switchWithStopBtn(btn).then = () => stopPlayback();
                 let ticksToTempo = getTicksToTempo(smf);
-                stopAnimation = opt(noteDisplay).map(disp => disp.animatePointer(
-                    ticksToTempo, smf.ticksPerBeat)).def(() => {});
+                if (animate) {
+                    stopAnimation = opt(noteDisplay).map(disp => disp.animatePointer(
+                        ticksToTempo, smf.ticksPerBeat)).def(() => {});
+                }
                 stopPlayback = () => {
                     playbackFinished();
                     stopAnimation();
@@ -161,6 +161,25 @@
             });
         };
 
+        /**
+         *  sometimes first note in track starts somewhere in the
+         * middle of the song - no need to force user to wait all
+         * this time when he is listening to just this track
+         */
+        let trimTrackSilence = function(track) {
+            let changed = false;
+            for (let event of track.events) {
+                if (event.delta > 0) {
+                    event.delta = 0;
+                    changed = true;
+                }
+                if (isNoteOn(event)) {
+                    break;
+                }
+            }
+            return changed;
+        };
+
         let playTrack = function(trackNum, isOud, isTabla, btn) {
             let configTrack = gui.collectParams(gui).configTracks[trackNum];
             let possible = false;
@@ -183,15 +202,13 @@
                         .filter(e => e.type === 'MIDI')
                         .forEach(e => e.midiChannel = 10);
                 }
+                let timingChanged = trimTrackSilence(smfCopy.tracks[trackNum]);
                 smfCopy.tracks[trackNum].events.filter(isNoteOn)
                     .forEach(e => e.parameter2 = scaleVelocity(
                         e.parameter2, configTrack.velocityFactor
                     ));
                 console.log('track SMF', smfCopy);
-                playSmf(smfCopy, ranamSf, btn);
-                return true;
-            } else {
-                return false;
+                playSmf(smfCopy, ranamSf, btn, !timingChanged);
             }
         };
 
@@ -229,7 +246,7 @@
 
             noteDisplay = NoteDisplay(gui.noteDisplayCont, smf);
             noteDisplay.onNoteClick = (note) => opt(ranamSf).get = (sf) => {
-                let synth = Synth(audioCtx, sf, fluidSf);
+                let synth = Synth(audioCtx, sf, () => fluidSf);
                 synth.handleMidiEvent({
                     type: 'MIDI',
                     midiEventType: 9, midiChannel: note.chan,
@@ -247,7 +264,7 @@
                 if (!currentSmf) {
                     alert('MIDI file not loaded');
                 } else {
-                    playSmf(currentSmf, ranamSf, gui.playInputBtn);
+                    playSmf(currentSmf, ranamSf, gui.playInputBtn, true);
                 }
             };
             gui.playOutputBtn.onclick = () => {
@@ -259,7 +276,7 @@
                     gui.showMessages(ranamed);
                     if (ranamed.smfRanam) {
                         let parsed = Ns.Libs.SMFreader(ranamed.smfRanam);
-                        playSmf(parsed, ranamSf, gui.playOutputBtn);
+                        playSmf(parsed, ranamSf, gui.playOutputBtn, true);
                     }
                 }
             };

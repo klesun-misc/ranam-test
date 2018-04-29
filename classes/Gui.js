@@ -315,7 +315,6 @@ klesun.whenLoaded = () => (form) => {
         collectParams: collectParams,
         showMessages: showMessages,
         switchWithStopBtn: switchWithStopBtn,
-        updateScaleTimeRanges: updateScaleTimeRanges,
         initScale: initScale,
         populateSmfGui: populateSmfGui,
         // I desire to replace them all with value getters/setters one day

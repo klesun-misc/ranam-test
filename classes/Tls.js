@@ -110,5 +110,6 @@ define([], () => (...ctorArgs) => {
         http: http,
         mkDom: mkDom,
         range: (l, r) => new Array(r - l).fill(0).map((_, i) => l + i),
+        deepCopy: val => JSON.parse(JSON.stringify(val)),
     };
 });
