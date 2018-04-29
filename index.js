@@ -389,7 +389,7 @@
 
             let ticksToTempo = collectTicksToTempo(smf);
             let tempos = Object.values(ticksToTempo);
-            let tempoStr = tempos.map(t => Math.round(t)).join(', ') || '120';
+            let tempoStr = tempos.map(t => Math.round(t)).join(', ').slice(0, 20) || '120';
             gui.tempoHolder.innerHTML = tempoStr;
             gui.tempoInput.value = tempos.reduce((sum, t) => sum + t, 0) / tempos.length;
             if (new Set(tempos).size > 1) {

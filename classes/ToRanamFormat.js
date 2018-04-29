@@ -223,10 +223,7 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
                 });
             }
         } else if (readerEvent.type === 'meta') {
-            if (formParams.removeMeta) {
-                // we wanna hear how will one song sound without tempo
-                return null;
-            } else if (readerEvent.metaType === 47) {
+            if (readerEvent.metaType === 47) {
                 // End Of Track message, will be added automatically by
                 // jsmidgen, so no need to dupe it, it causes problems
                 return null;

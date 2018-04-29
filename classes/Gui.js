@@ -22,7 +22,6 @@ define([], () => (form) => {
     let addAnotherRegionBtn = $$('button.add-another-region', form)[0];
     let resetRegionsBtn = $$('button.reset-regions', form)[0];
     let convertBtn = $$('button.convert-to-arabic', form)[0];
-    let removeMetaFlag = $$('input.remove-meta', form)[0];
     let noteDisplayCont = $$('.note-display-cont', form)[0];
     let noteHoverInfoHolder = $$('.note-hover-info', form)[0];
     let soundfontLoadingImg = $$('img.soundfont-loading', form)[0];
@@ -53,7 +52,6 @@ define([], () => (form) => {
                 $$('input.track-volume', t)[0].value /
                 $$('.holder.original-volume', t)[0].innerHTML,
         }),
-        removeMeta: removeMetaFlag.checked,
     };
 
     return {
@@ -75,7 +73,6 @@ define([], () => (form) => {
         addAnotherRegionBtn: addAnotherRegionBtn,
         resetRegionsBtn: resetRegionsBtn,
         convertBtn: convertBtn,
-        removeMetaFlag: removeMetaFlag,
         noteDisplayCont: noteDisplayCont,
         noteHoverInfoHolder: noteHoverInfoHolder,
         soundfontLoadingImg: soundfontLoadingImg,

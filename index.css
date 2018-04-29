@@ -93,11 +93,14 @@ form.playing button.destroy-when-music-stops {
 }
 
 .note-display-cont .scroll {
-    height: 500px;
+    height: 400px;
     overflow: auto;
     overflow-y: scroll;
     resize: vertical;
     position: relative;
+    /* not sure it actually does anything... */
+    scroll-behavior: auto;
+
     /* does not seem do decrease CPU usage sadly */
     /*will-change: scroll-position;*/
 }

@@ -101,7 +101,7 @@ klesun.whenLoaded = () => {
                     console.debug('note outside the rows ' + yOffset, note);
                 }
             }
-            noteList.style.width = maxX + container.clientWidth || '100%';
+            noteList.style.width = maxX + scroll.clientWidth - POINTER_OFFSET || '100%';
             scroll.scrollTop = (scroll.scrollHeight - scroll.clientHeight) * 3 / 4;
             scroll.scrollLeft = 0;
         };
