@@ -337,29 +337,24 @@
                         changeAsUser($$('select.key-note', reg), 'Do');
                     });
             };
-            //let sf2Url = './sf2/ranam_full.sf2';
-            // let sfRanamUrl = 'https://dl.dropbox.com/s/ighf7wpdw2yfu6x/ranam_full.sf2?dl=0';
-            // let isSf3Ranam = false;
             let sfRanamUrl = 'https://dl.dropbox.com/s/zyh5kzc42zda1ud/ranam_full.sf3?dl=0';
-            let isSf3Ranam = true;
             http(sfRanamUrl, 'arraybuffer').then = (sfBuf) => {
                 let statusDom = $$('.sf2-http-status')[0];
                 statusDom.style.color = 'rgb(2, 255, 0)';
                 statusDom.innerHTML = 'Loaded Ranam soundfont ' + sfBuf.byteLength + ' bytes';
                 if (!ranamSf) {
-                    ranamSf = SfAdapter(sfBuf, audioCtx, isSf3Ranam);
+                    ranamSf = SfAdapter(sfBuf, audioCtx, true);
                     initPlaybackBtns();
                 }
             };
 
             let sfFluidUrl = 'https://dl.dropbox.com/s/dm2ocmb96nkl458/fluid.sf3?dl=0';
-            let isSf3Fluid = true;
             http(sfFluidUrl, 'arraybuffer').then = (sfBuf) => {
                 let statusDom = $$('.sf2-http-status-fluid')[0];
                 statusDom.style.color = 'rgb(2, 255, 0)';
                 statusDom.innerHTML = 'Loaded General soundfont ' + sfBuf.byteLength + ' bytes';
                 if (!fluidSf) {
-                    fluidSf = SfAdapter(sfBuf, audioCtx, isSf3Fluid);
+                    fluidSf = SfAdapter(sfBuf, audioCtx, true);
                     initPlaybackBtns();
                     gui.testSf3DecodingBtn.onclick = () => {
                         let params = {bank: 0, preset: 0, semitone: 60, velocity: 100};

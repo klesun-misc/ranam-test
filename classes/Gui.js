@@ -10,7 +10,7 @@ klesun.whenLoaded = () => (form) => {
     'use strict';
 
     let $$ = (s, root) => [...(root || document).querySelectorAll(s)];
-    let {mkDom, promise, opt} = Tls();
+    let {mkDom, promise, opt, range} = Tls();
     let {getScaleKeyNotes, getPitchResultNote} = ScaleMapping();
 
     let smfInput = $$('input[type="file"].midi-file', form)[0];
@@ -112,8 +112,8 @@ klesun.whenLoaded = () => (form) => {
     let updateScaleTimeRanges = function (div, smfAdapter) {
         let formData = collectParams();
         let ticksPerBeat = smfAdapter.ticksPerBeat;
-        let totalTicks = smfAdapter.tracks[formData.oudTrackNum].totalTicks;
-        let totalNotes = smfAdapter.tracks[formData.oudTrackNum].totalNotes;
+        let totalTicks = opt(smfAdapter.tracks[formData.oudTrackNum]).map(t => t.totalTicks).def(384);
+        let totalNotes = opt(smfAdapter.tracks[formData.oudTrackNum]).map(t => t.totalNotes).def(100);
 
         let formatSelect = $$('select.from-to-format', div)[0];
         let onchange = () => {
@@ -217,20 +217,42 @@ klesun.whenLoaded = () => (form) => {
         let oudTrackNum = smfAdapter.tracks.length > 1 ? 1 : 0;
         let playTrack = (trackNum, isOud, isTabla, playBtn) =>
             showMessages({errors: ['Action should be assigned outside']});
-        let onlyOne = () => {
-            $$(':scope > tr.real', trackList)
-                .forEach(tr => {
-                    let occupied = $$('input[type="radio"]:checked', tr).length > 0;
-                    $$('input[type="radio"]:not(:checked)', tr).forEach(radio => {
-                        if (occupied) {
-                            radio.setAttribute('disabled', 'disabled');
-                        } else {
-                            radio.removeAttribute('disabled');
+
+        let updateAllScaleRanges = () => $$(':scope > div', regionListCont)
+            .forEach(div => updateScaleTimeRanges(div, smfAdapter));
+
+        let lastTrackNums = {};
+        let onlyOne = (trackNum, tr, isOud) => {
+            let trs = $$(':scope > tr', trackList);
+            let oudFlag = $$('input[type="radio"][name="isOudTrack"]', tr)[0];
+            let tablaFlag = $$('input[type="radio"][name="isTablaTrack"]', tr)[0];
+            if (oudFlag.checked && tablaFlag.checked) {
+                // swap them
+                let oldTrackNum = lastTrackNums[isOud];
+                let neighbor = isOud ? tablaFlag : oudFlag;
+                let neighborName = isOud ? 'isTablaTrack' : 'isOudTrack';
+                neighbor.checked = false;
+                let oldTr = trs[oldTrackNum];
+                let selector = 'input[type="radio"][name="' + neighborName + '"]';
+                if (oldTrackNum !== undefined && oldTrackNum !== trackNum && oldTr) {
+                    $$(selector, oldTr)[0].checked = true;
+                    lastTrackNums[!isOud] = oldTrackNum;
+                } else {
+                    // or just put it on any free row
+                    let trackNums = new Set(range(0, trs.length));
+                    trackNums.delete(trackNum);
+                    for (let trackNum of trackNums) {
+                        let tr = trs[trackNum];
+                        if (tr) {
+                            $$(selector, tr)[0].checked = true;
+                            lastTrackNums[!isOud] = trackNum;
+                            break;
                         }
-                    });
-                });
-            $$(':scope > div', regionListCont)
-                .forEach(div => updateScaleTimeRanges(div, smfAdapter));
+                    }
+                }
+            }
+            updateAllScaleRanges();
+            lastTrackNums[isOud] = trackNum;
         };
         let lastVisionFlagVal = true;
         for (let i = 0; i < smfAdapter.tracks.length; ++i) {
@@ -240,11 +262,10 @@ klesun.whenLoaded = () => (form) => {
             $$('.holder.track-number', tr)[0].innerHTML = i;
             $$('.holder.track-name', tr)[0].innerHTML = track.trackName || '';
             $$('.holder.event-cnt', tr)[0].innerHTML = track.events.length;
-            let maxVel = track.maxVelocity;
             let velInp = $$('input.track-volume', tr)[0];
-            velInp.value = maxVel;
+            velInp.value = track.maxVelocity;
             velInp.onchange = () => velInp.value = Math.max(0, Math.min(100, velInp.value));
-            $$('.holder.original-volume', tr)[0].innerHTML = maxVel;
+            $$('.holder.original-volume', tr)[0].innerHTML = track.maxVelocity;
             let hideNotesCls = 'hide-notes-channel-' + i;
             opt($$('.show-in-note-display', tr)[0]).get = flag => {
                 flag.onclick = (e) => e.preventDefault();
@@ -264,22 +285,21 @@ klesun.whenLoaded = () => (form) => {
             let tablaRadio = $$('input[name="isTablaTrack"]', tr)[0];
             oudRadio.value = i;
             tablaRadio.value = i;
-            oudRadio.onchange = onlyOne;
-            tablaRadio.onchange = onlyOne;
+            oudRadio.onchange = () => onlyOne(i, tr, true);
+            tablaRadio.onchange = () => onlyOne(i, tr, false);
             let playBtn = $$('button.play-track', tr)[0];
             playBtn.onclick = () => playTrack(
                 i, oudRadio.checked, tablaRadio.checked, playBtn
             );
             if (i === oudTrackNum) {
                 $$('input[name="isOudTrack"]', tr)[0].checked = true;
-                $$('input[name="isTablaTrack"]', tr)[0].setAttribute('disabled', 'disabled');
             }
             trackList.appendChild(tr);
         }
         let noneTr = trackTrRef.cloneNode(true);
         $$('.holder.track-number', noneTr)[0].innerHTML = 'None';
         $$('input[name="isTablaTrack"]', noneTr)[0].checked = true;
-        $$('input[name="isTablaTrack"]', noneTr)[0].onchange = onlyOne;
+        $$('input[name="isTablaTrack"]', noneTr)[0].onchange = updateAllScaleRanges;
         $$('input[name="isOudTrack"]', noneTr)[0].remove();
         $$('button.play-track', noneTr)[0].remove();
         $$('.show-in-note-display', noneTr)[0].remove();
@@ -302,8 +322,7 @@ klesun.whenLoaded = () => (form) => {
             discardTempoChangesBtn.style.display = 'none';
             tempoInput.style.display = 'inline';
         }
-        $$(':scope > div', regionListCont)
-            .forEach(div => updateScaleTimeRanges(div, smfAdapter));
+        updateAllScaleRanges();
         return {
             set onPlayTrackClick(cb) {
                 playTrack = cb;
