@@ -7,30 +7,28 @@ define([], () => (form) => {
 
     let $$ = (s, root) => [...(root || document).querySelectorAll(s)];
 
-    let gui = {
-        smfInput: $$('input[type="file"].midi-file', form)[0],
-        sf2Input: $$('input[type="file"].soundfont-file', form)[0],
-        smfFieldSet: $$('fieldset.needs-smf', form)[0],
-        ticksPerBeatHolder: $$('.ticks-per-beat', form)[0],
-        tempoHolder: $$('.tempo-holder', form)[0],
-        discardTempoChangesBtn: $$('button.discard-tempo-changes', form)[0],
-        tempoInput: $$('input.tempo', form)[0],
-        trackList: $$('tbody.current-tracks', form)[0],
-        trackTrRef: $$('.current-tracks tr')[0].cloneNode(true),
-        regionListCont: $$('.region-list', form)[0],
-        regionRef: $$('.region-list > *', form)[0].cloneNode(true),
-        pitchBendRef: $$('.pitch-bend-list > *', form)[0].cloneNode(true),
-        addAnotherRegionBtn: $$('button.add-another-region', form)[0],
-        resetRegionsBtn: $$('button.reset-regions', form)[0],
-        convertBtn: $$('button.convert-to-arabic', form)[0],
-        removeMetaFlag: $$('input.remove-meta', form)[0],
-        noteDisplayCont: $$('.note-display-cont', form)[0],
-        noteHoverInfoHolder: $$('.note-hover-info', form)[0],
-        soundfontLoadingImg: $$('img.soundfont-loading', form)[0],
-        playInputBtn: $$('button.play-input', form)[0],
-        playOutputBtn: $$('button.play-output', form)[0],
-        testSf3DecodingBtn: $$('button.test-sf3-decoding', form)[0],
-    };
+    let smfInput = $$('input[type="file"].midi-file', form)[0];
+    let sf2Input = $$('input[type="file"].soundfont-file', form)[0];
+    let smfFieldSet = $$('fieldset.needs-smf', form)[0];
+    let ticksPerBeatHolder = $$('.ticks-per-beat', form)[0];
+    let tempoHolder = $$('.tempo-holder', form)[0];
+    let discardTempoChangesBtn = $$('button.discard-tempo-changes', form)[0];
+    let tempoInput = $$('input.tempo', form)[0];
+    let trackList = $$('tbody.current-tracks', form)[0];
+    let trackTrRef = $$('.current-tracks tr')[0].cloneNode(true);
+    let regionListCont = $$('.region-list', form)[0];
+    let regionRef = $$('.region-list > *', form)[0].cloneNode(true);
+    let pitchBendRef = $$('.pitch-bend-list > *', form)[0].cloneNode(true);
+    let addAnotherRegionBtn = $$('button.add-another-region', form)[0];
+    let resetRegionsBtn = $$('button.reset-regions', form)[0];
+    let convertBtn = $$('button.convert-to-arabic', form)[0];
+    let removeMetaFlag = $$('input.remove-meta', form)[0];
+    let noteDisplayCont = $$('.note-display-cont', form)[0];
+    let noteHoverInfoHolder = $$('.note-hover-info', form)[0];
+    let soundfontLoadingImg = $$('img.soundfont-loading', form)[0];
+    let playInputBtn = $$('button.play-input', form)[0];
+    let playOutputBtn = $$('button.play-output', form)[0];
+    let testSf3DecodingBtn = $$('button.test-sf3-decoding', form)[0];
 
     let collectRegion = div => 1 && {
         scale: $$('select.scale', div)[0].value,
@@ -46,21 +44,43 @@ define([], () => (form) => {
     };
 
     let collectParams = () => 1 && {
-        tempo: gui.tempoInput.style.display !== 'none' ? gui.tempoInput.value : null,
-        scaleRegions: $$(':scope > *', gui.regionListCont).map(collectRegion),
-        oudTrackNum: $$('[name="isOudTrack"]:checked', gui.trackList).map(r => +r.value)[0],
-        tablaTrackNum: $$('[name="isTablaTrack"]:checked', gui.trackList).map(r => +r.value || null)[0],
-        configTracks: $$(':scope > tr.real', gui.trackList).map((t,i) => 1 && {
+        tempo: tempoInput.style.display !== 'none' ? tempoInput.value : null,
+        scaleRegions: $$(':scope > *', regionListCont).map(collectRegion),
+        oudTrackNum: $$('[name="isOudTrack"]:checked', trackList).map(r => +r.value)[0],
+        tablaTrackNum: $$('[name="isTablaTrack"]:checked', trackList).map(r => +r.value || null)[0],
+        configTracks: $$(':scope > tr.real', trackList).map((t,i) => 1 && {
             velocityFactor: $$('.holder.original-volume', t)[0].innerHTML <= 0 ? 1 :
                 $$('input.track-volume', t)[0].value /
                 $$('.holder.original-volume', t)[0].innerHTML,
         }),
-        removeMeta: gui.removeMetaFlag.checked,
+        removeMeta: removeMetaFlag.checked,
     };
 
     return {
-        gui: gui,
         collectRegion: collectRegion,
         collectParams: collectParams,
+        // I desire to replace them all with value getters/setters one day
+        smfInput: smfInput,
+        sf2Input: sf2Input,
+        smfFieldSet: smfFieldSet,
+        ticksPerBeatHolder: ticksPerBeatHolder,
+        tempoHolder: tempoHolder,
+        discardTempoChangesBtn: discardTempoChangesBtn,
+        tempoInput: tempoInput,
+        trackList: trackList,
+        trackTrRef: trackTrRef,
+        regionListCont: regionListCont,
+        regionRef: regionRef,
+        pitchBendRef: pitchBendRef,
+        addAnotherRegionBtn: addAnotherRegionBtn,
+        resetRegionsBtn: resetRegionsBtn,
+        convertBtn: convertBtn,
+        removeMetaFlag: removeMetaFlag,
+        noteDisplayCont: noteDisplayCont,
+        noteHoverInfoHolder: noteHoverInfoHolder,
+        soundfontLoadingImg: soundfontLoadingImg,
+        playInputBtn: playInputBtn,
+        playOutputBtn: playOutputBtn,
+        testSf3DecodingBtn: testSf3DecodingBtn,
     };
 });

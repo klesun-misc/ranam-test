@@ -16,7 +16,7 @@
 
         let {http, opt, promise} = Tls();
         let {isNoteOn, scaleVelocity} = MidiUtil();
-        let {gui, collectRegion, collectParams} = Gui();
+        let gui = Gui();
         let {getScaleKeyNotes, getPitchResultNote} = ScaleMapping();
 
         let audioCtx = new AudioContext();
@@ -57,12 +57,7 @@
             return events.filter(isNoteOn).length;
         };
 
-        let getTicksToTempo = function (smf) {
-            let overwrittenTempo = collectParams().tempo;
-            if (overwrittenTempo) {
-                return {0: overwrittenTempo};
-            }
-
+        let collectTicksToTempo = function(smf) {
             let ticksToTempo = {};
             for (let track of smf.tracks) {
                 let ticks = 0;
@@ -75,6 +70,15 @@
                 }
             }
             return ticksToTempo;
+        };
+
+        let getTicksToTempo = function (smf) {
+            let overwrittenTempo = gui.collectParams().tempo;
+            if (overwrittenTempo) {
+                return {0: overwrittenTempo};
+            } else {
+                return collectTicksToTempo(smf);
+            }
         };
 
         let playSmf = (smf, sf2, btn) => {
@@ -90,7 +94,7 @@
                         .forEach(dom => dom.classList.remove('current-source'));
                 };
 
-                let playback = PlaySmf(smf, synth, () => collectParams(gui));
+                let playback = PlaySmf(smf, synth, () => gui.collectParams(gui));
                 playback.then = playbackFinished;
                 switchWithStopBtn(btn);
                 let ticksToTempo = getTicksToTempo(smf);
@@ -141,8 +145,8 @@
             let onchange = () => {
                 let step = 1;
                 let max = 1;
-                let formData = collectParams(gui);
-                let regionData = collectRegion(div);
+                let formData = gui.collectParams(gui);
+                let regionData = gui.collectRegion(div);
                 let ticksPerBeat = opt(currentSmf).map(smf => smf.ticksPerBeat).def(384);
                 let oudEvents = opt(currentSmf).map(smf => smf.tracks[formData.oudTrackNum]).fmp(t => t.events);
                 let totalTicks = getTotalTicks(oudEvents);
@@ -272,7 +276,7 @@
         };
 
         let playTrack = function(trackNum, isOud, isTabla, btn) {
-            let configTrack = collectParams(gui).configTracks[trackNum];
+            let configTrack = gui.collectParams(gui).configTracks[trackNum];
             let possible = false;
             switch (null) {
                 case currentSmf: alert('Load MIDI file first!'); break;
@@ -382,7 +386,7 @@
             gui.trackList.appendChild(noneTr);
             gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
 
-            let ticksToTempo = getTicksToTempo(smf);
+            let ticksToTempo = collectTicksToTempo(smf);
             let tempos = Object.values(ticksToTempo);
             let tempoStr = tempos.map(t => Math.round(t)).join(', ') || '120';
             gui.tempoHolder.innerHTML = tempoStr;
@@ -429,7 +433,7 @@
                 if (!currentSmf) {
                     alert('MIDI file not loaded');
                 } else {
-                    let params = collectParams(gui);
+                    let params = gui.collectParams(gui);
                     let buff = ToRanamFormat(currentSmf, params);
                     if (buff) {
                         let parsed = Ns.Libs.SMFreader(buff);
@@ -468,7 +472,7 @@
                 });
             };
             gui.convertBtn.onclick = () => {
-                let params = collectParams(gui);
+                let params = gui.collectParams(gui);
                 let buff = ToRanamFormat(currentSmf, params);
                 if (buff) {
                     console.log('Converted SMF', Ns.Libs.SMFreader(buff).tracks);
