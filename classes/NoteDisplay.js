@@ -81,6 +81,7 @@ klesun.whenLoaded = () => {
                     row.appendChild(mkDom('div', {
                         classList: ['colorize-channel-bg'],
                         'data-channel': chan,
+                        'data-track': track,
                         style: {
                             position: 'absolute',
                             top: 0,

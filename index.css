@@ -88,7 +88,10 @@ form.playing button.destroy-when-music-stops {
 }
 .note-display-cont {
     position: relative;
+    border: solid #0a25aa 2px;
+    margin-top: 4px;
 }
+
 .note-display-cont .scroll {
     height: 500px;
     overflow: auto;
@@ -103,6 +106,23 @@ form.playing button.destroy-when-music-stops {
     height: 100%;
     background-color: red;
 }
+
+#midi-file-params.hide-notes-channel-0  .note-list > * > *[data-track="0"]  { display: none; }
+#midi-file-params.hide-notes-channel-1  .note-list > * > *[data-track="1"]  { display: none; }
+#midi-file-params.hide-notes-channel-2  .note-list > * > *[data-track="2"]  { display: none; }
+#midi-file-params.hide-notes-channel-3  .note-list > * > *[data-track="3"]  { display: none; }
+#midi-file-params.hide-notes-channel-4  .note-list > * > *[data-track="4"]  { display: none; }
+#midi-file-params.hide-notes-channel-5  .note-list > * > *[data-track="5"]  { display: none; }
+#midi-file-params.hide-notes-channel-6  .note-list > * > *[data-track="6"]  { display: none; }
+#midi-file-params.hide-notes-channel-7  .note-list > * > *[data-track="7"]  { display: none; }
+#midi-file-params.hide-notes-channel-8  .note-list > * > *[data-track="8"]  { display: none; }
+#midi-file-params.hide-notes-channel-9  .note-list > * > *[data-track="9"]  { display: none; }
+#midi-file-params.hide-notes-channel-10 .note-list > * > *[data-track="10"] { display: none; }
+#midi-file-params.hide-notes-channel-11 .note-list > * > *[data-track="11"] { display: none; }
+#midi-file-params.hide-notes-channel-12 .note-list > * > *[data-track="12"] { display: none; }
+#midi-file-params.hide-notes-channel-13 .note-list > * > *[data-track="13"] { display: none; }
+#midi-file-params.hide-notes-channel-14 .note-list > * > *[data-track="14"] { display: none; }
+#midi-file-params.hide-notes-channel-15 .note-list > * > *[data-track="15"] { display: none; }
 
 body {
     --channel-color-0 : rgb(192, 0, 0);

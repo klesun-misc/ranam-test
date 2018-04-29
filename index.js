@@ -327,6 +327,13 @@
                 velInp.value = maxVel;
                 velInp.onchange = () => velInp.value = Math.max(0, Math.min(100, velInp.value));
                 $$('.holder.original-volume', tr)[0].innerHTML = maxVel;
+                let hideNotesCls = 'hide-notes-channel-' + i;
+                opt($$('.show-in-note-display', tr)[0]).get = flag => {
+                    flag.onchange = () => !flag.checked
+                        ? form.classList.add(hideNotesCls)
+                        : form.classList.remove(hideNotesCls);
+                    flag.onchange();
+                };
                 let oudRadio = $$('input[name="isOudTrack"]', tr)[0];
                 let tablaRadio = $$('input[name="isTablaTrack"]', tr)[0];
                 oudRadio.value = i;
