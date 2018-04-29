@@ -152,74 +152,6 @@
             };
         };
 
-        let addPitchBendNote = function (pitchBendList) {
-            let scaleBlock = pitchBendList.parentNode.parentNode;
-            let infoBlock = $$('.no-pitch-bend-msg', scaleBlock)[0];
-            infoBlock.style.display = 'none';
-
-            let pitchBendSpan = gui.pitchBendRef.cloneNode(true);
-            let onchange = () => {
-                let noteName = $$('select.pitched-note', pitchBendSpan)[0].value;
-                let pitchBend = $$('input.pitch-bend', pitchBendSpan)[0].value;
-                $$('.pitch-result', pitchBendSpan)[0].value = getPitchResultNote(noteName, pitchBend);
-            };
-            $$('select.pitched-note', pitchBendSpan)[0].onchange = onchange;
-            $$('input.pitch-bend', pitchBendSpan)[0].oninput = onchange;
-            $$('button.remove-pitched-note', pitchBendSpan)[0]
-                .onclick = () => {
-                pitchBendSpan.remove();
-                if ($$('.pitch-bend-list > *', scaleBlock).length === 0) {
-                    infoBlock.style.display = 'inline';
-                }
-            };
-            pitchBendList.appendChild(pitchBendSpan);
-            return pitchBendSpan;
-        };
-
-        let updateScaleInfo = function (div) {
-            let pitchBendList = $$('.pitch-bend-list', div)[0];
-            pitchBendList.innerHTML = '';
-            let scale = $$('select.scale', div)[0].value;
-            let keyNote = $$('select.key-note', div)[0].value;
-            let keyNotes = getScaleKeyNotes(scale);
-            pitchBendList.innerHTML = '';
-            if (keyNotes) {
-                for (let pitchInfo of keyNotes[keyNote] || []) {
-                    let pitchBend = addPitchBendNote(pitchBendList);
-                    $$('select.pitched-note', pitchBend)[0].value = pitchInfo.noteName;
-                    $$('input.pitch-bend', pitchBend)[0].value = pitchInfo.pitchBend;
-                    $$('.pitch-result', pitchBend)[0].value = pitchInfo.pitched;
-                }
-            }
-            if (!pitchBendList.innerHTML) {
-                $$('.no-pitch-bend-msg', div).forEach(span => span.style.display = 'inline');
-            } else {
-                $$('.no-pitch-bend-msg', div).forEach(span => span.style.display = 'none');
-            }
-        };
-
-        let initScale = function (div) {
-            opt(currentSmf).map(SmfAdapter).get = smfAdapter =>
-                gui.updateScaleTimeRanges(div, smfAdapter);
-
-            let onchange = () => updateScaleInfo(div);
-            $$('select.scale', div)[0].onchange = onchange;
-            $$('select.key-note', div)[0].onchange = onchange;
-            $$('button.remove-region', div)[0].onclick = () => {
-                let regions = div.parentNode.children;
-                if (regions.length > 1) {
-                    console.log(regions);
-                    div.remove();
-                } else {
-                    alert('There should be at least 1 region');
-                }
-            };
-            $$('button.add-pitch-bend', div)[0].onclick = () => {
-                addPitchBendNote($$('.pitch-bend-list', div)[0]);
-            };
-            onchange();
-        };
-
         let changeAsUser = function (inputs, value) {
             for (let inp of inputs) {
                 inp.value = value;
@@ -463,11 +395,12 @@
                     saveMidiToDisc(buff);
                 }
             };
-            initScale($$(':scope > *', gui.regionListCont)[0]);
+            let getCurrentSmfAdapter = () => opt(currentSmf).map(SmfAdapter);
+            gui.initScale($$(':scope > *', gui.regionListCont)[0], getCurrentSmfAdapter());
             gui.addAnotherRegionBtn.onclick = () => {
                 let cloned = gui.regionRef.cloneNode(true);
                 gui.regionListCont.appendChild(cloned);
-                initScale(cloned);
+                gui.initScale(cloned, getCurrentSmfAdapter());
             };
             gui.resetRegionsBtn.onclick = () => {
                 $$(':scope > *', gui.regionListCont).slice(1)
