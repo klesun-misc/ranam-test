@@ -125,16 +125,16 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
                     let semitone = event.parameter1;
                     openNotes.add(semitone);
                     if (semitone < 43 || semitone > 64) {
-                        errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at note ' + noteOnIdx + ' (' + ticks + ' ticks)');
+                        errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at note index ' + noteOnIdx + ' (' + ticks + ' ticks)');
                     }
                     if (openNotes.size > 1) {
-                        errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at note ' + noteOnIdx + ' (' + ticks + ' ticks). Please fix them and try again');
+                        errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at note index ' + noteOnIdx + ' (' + ticks + ' ticks). Please fix them and try again');
                     }
                 } else if (isNoteOff(event)) {
                     let semitone = event.parameter1;
                     openNotes.delete(semitone);
                 } else if (isPitchBend(event)) {
-                    warnings.push('Your MIDI has pitchbend already at note ' + noteOnIdx + ' (' + ticks + ' ticks). Please remove them if you don’t want them');
+                    warnings.push('Your MIDI has pitchbend already at note index ' + noteOnIdx + ' (' + ticks + ' ticks). Please remove them if you don’t want them');
                 }
             }
         }
@@ -330,14 +330,11 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
 
         let normalized = normalizeSmf();
         if (normalized.errors.length > 0) {
-            alert('Invalid MIDI file: ' + normalized.errors.slice(0, 5).join('\n'));
-            return null;
+            normalized.smfRanam = null;
         } else {
-            if (normalized.warnings.length > 0) {
-                alert('Warning: ' + normalized.warnings.slice(0, 5).join('\n'));
-            }
-            return convertToArabicMidi(normalized.smf);
+            normalized.smfRanam = convertToArabicMidi(normalized.smf);
         }
+        return normalized;
     };
 
     return main();

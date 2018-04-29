@@ -56,13 +56,13 @@ input[type="file"].midi-file:invalid {
     padding-left: 8px;
     background-color: darkgrey;
 }
-form.playing .playback-config {
+.playing .playback-config {
     box-shadow: 0 0 13px 4.5px rgb(196, 98, 42);
 }
-form.playing button.current-source {
+.playing button.current-source {
     display: none;
 }
-form.playing button.destroy-when-music-stops {
+.playing button.destroy-when-music-stops {
     box-shadow: 0 0 13px 4.5px rgb(189, 98, 195);
 }
 .note-list > .ebony {
@@ -110,6 +110,28 @@ form.playing button.destroy-when-music-stops {
     left: 20px;
     height: 100%;
     background-color: red;
+}
+
+.message-container {
+    position: fixed;
+    width: 100%;
+    max-height: 200px;
+    overflow: auto;
+    top: 0;
+    left: 0;
+    background-color: rgba(55, 68, 118, 0.56);
+}
+.message-container > * {
+    margin: 3px;
+    padding: 2px 8px;
+    background-color: white;
+    border-radius: 10px;
+}
+.message-container .severity-error {
+    color: red;
+}
+.message-container .severity-warning {
+    color: #c55e00;
 }
 
 #midi-file-params.hide-notes-channel-0  .note-list > * > *[data-track="0"]  { display: none; }

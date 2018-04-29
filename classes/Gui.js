@@ -3,9 +3,12 @@
  * provides the mapping to HTML dom elements
  * and utilizes the dom-related code
  */
-define([], () => (form) => {
+var klesun = Klesun();
+klesun.requires('./Tls.js').then = (Tls) =>
+klesun.whenLoaded = () => (form) => {
 
     let $$ = (s, root) => [...(root || document).querySelectorAll(s)];
+    let {mkDom} = Tls();
 
     let smfInput = $$('input[type="file"].midi-file', form)[0];
     let sf2Input = $$('input[type="file"].soundfont-file', form)[0];
@@ -28,6 +31,35 @@ define([], () => (form) => {
     let playInputBtn = $$('button.play-input', form)[0];
     let playOutputBtn = $$('button.play-output', form)[0];
     let testSf3DecodingBtn = $$('button.test-sf3-decoding', form)[0];
+    let msgCont = $$('.message-container', form)[0];
+
+    let showMessages = function(record) {
+        msgCont.innerHTML = '';
+        let pairs = [
+            ['WARNING', 'severity-warning', record.warnings || []],
+            ['ERROR', 'severity-error', record.errors || []],
+        ];
+        for (let [prefix, cls, msgs] of pairs) {
+            for (let msg of msgs.slice(0,3)) {
+                let msgBox = mkDom('div', {
+                    classList: [cls],
+                    children: [
+                        mkDom('span', {
+                            innerHTML: prefix + ': ' + msg,
+                            style: {float: 'left'},
+                        }),
+                        mkDom('button', {
+                            innerHTML: 'Dismiss',
+                            style: {float: 'right'},
+                            onclick: () => msgBox.remove(),
+                        }),
+                        mkDom('br', {clear: 'all'}),
+                    ],
+                });
+                msgCont.insertBefore(msgBox, msgCont.firstChild);
+            }
+        }
+    };
 
     let collectRegion = div => 1 && {
         scale: $$('select.scale', div)[0].value,
@@ -57,6 +89,7 @@ define([], () => (form) => {
     return {
         collectRegion: collectRegion,
         collectParams: collectParams,
+        showMessages: showMessages,
         // I desire to replace them all with value getters/setters one day
         smfInput: smfInput,
         sf2Input: sf2Input,
@@ -80,4 +113,4 @@ define([], () => (form) => {
         playOutputBtn: playOutputBtn,
         testSf3DecodingBtn: testSf3DecodingBtn,
     };
-});
+};

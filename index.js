@@ -83,7 +83,11 @@
         };
 
         let playSmf = (smf, sf2, btn) => {
-            let synth = Synth(audioCtx, ranamSf, fluidSf);
+            if (!ranamSf || !fluidSf) {
+                gui.showMessages({errors: ['Wait for soundfont data to load!']});
+                return;
+            }
+            let synth = Synth(audioCtx, ranamSf, () => fluidSf);
             preloadSamples(smf, synth, sf2).then = () => {
                 stopPlayback();
                 form.classList.add('playing');
@@ -91,7 +95,7 @@
                     form.classList.remove('playing');
                     $$('.destroy-when-music-stops', form)
                         .forEach(dom => dom.remove());
-                    $$('button.current-source')
+                    $$('button.current-source', form)
                         .forEach(dom => dom.classList.remove('current-source'));
                 };
 
@@ -437,9 +441,10 @@
                     alert('MIDI file not loaded');
                 } else {
                     let params = gui.collectParams(gui);
-                    let buff = ToRanamFormat(currentSmf, params);
-                    if (buff) {
-                        let parsed = Ns.Libs.SMFreader(buff);
+                    let ranamed = ToRanamFormat(currentSmf, params);
+                    gui.showMessages(ranamed);
+                    if (ranamed.smfRanam) {
+                        let parsed = Ns.Libs.SMFreader(ranamed.smfRanam);
                         playSmf(parsed, ranamSf, gui.playOutputBtn);
                     }
                 }

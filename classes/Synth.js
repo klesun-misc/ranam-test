@@ -4,7 +4,7 @@
  * takes a MIDI event and produces the sound
  * @param fluidSf2 - optional
  */
-define([], () => (audioCtx, sf2Adapter, fluidSf2) => {
+define([], () => (audioCtx, sf2Adapter, getFluidSf) => {
     "use strict";
 
     let isNoteOn = (readerEvent) =>
@@ -115,7 +115,8 @@ define([], () => (audioCtx, sf2Adapter, fluidSf2) => {
                 // drum track
                 params.bank = 128;
             }
-            let sf2 = (useRanamSf2 || !fluidSf2) ? sf2Adapter : fluidSf2;
+            let fluidSf = getFluidSf();
+            let sf2 = (useRanamSf2 || !fluidSf) ? sf2Adapter : fluidSf;
             sf2.getSampleData(params, (samples) => {
                 if (samples.length === 0) {
                     console.error('No sample in the bank: ' + channel.bank + ' ' + channel.preset + ' ' + parameter1);
