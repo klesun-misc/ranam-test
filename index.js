@@ -16,7 +16,7 @@
 
         let {http, opt, promise} = Tls();
         let {isNoteOn, scaleVelocity} = MidiUtil();
-        let gui = Gui();
+        let gui = Gui(form);
         let {getScaleKeyNotes, getPitchResultNote} = ScaleMapping();
 
         let audioCtx = new AudioContext();
@@ -24,10 +24,6 @@
         let noteDisplay = null;
         let stopPlayback = () => {};
         let stopAnimation = () => {};
-
-        let isMouseDown = false;
-        form.onmousedown = (e) => isMouseDown |= e.button === 0;
-        form.onmouseup = (e) => isMouseDown &= e.button !== 0;
 
         let preloadSamples = (smfReader, synth, ranamSf2) => promise(done => {
             let fluidOk = !fluidSf ? true : false;
@@ -135,35 +131,12 @@
             saveAs(blob, 'ranam_song.mid', true);
         };
 
-        /**
-         * Adds some denormalized info to each track.
-         * Maybe I'll also make it provide notes separately
-         * from other events and group by absolute ticks...
-         */
-        let SmfAdapter = function(smf) {
-            return {
-                tpb: smf.ticksPerBeat,
-                tracks: smf.tracks.map(t => {
-                    return {
-                        totalTicks: getTotalTicks(t.events),
-                        totalNotes: getTotalNotes(t.events),
-                    };
-                }),
-            };
-        };
-
         let changeAsUser = function (inputs, value) {
             for (let inp of inputs) {
                 inp.value = value;
                 let event = new Event('change');
                 inp.dispatchEvent(event);
             }
-        };
-
-        let checkAsUser = function (checkbox, value) {
-            checkbox.checked = value;
-            let event = new Event('change');
-            checkbox.dispatchEvent(event);
         };
 
         /** change all preset/bank change messages to 121/123 */
@@ -222,105 +195,38 @@
             }
         };
 
+        /**
+         * Adds some denormalized info to each track.
+         * Maybe I'll also make it provide notes separately
+         * from other events and group by absolute ticks...
+         */
+        let SmfAdapter = function(smf) {
+            return {
+                ticksPerBeat: smf.ticksPerBeat,
+                ticksToTempo: collectTicksToTempo(smf),
+                tracks: smf.tracks.map(t => {
+                    return {
+                        trackName: t.trackName,
+                        totalTicks: getTotalTicks(t.events),
+                        totalNotes: getTotalNotes(t.events),
+                        maxVelocity: t.events
+                            .filter(isNoteOn).map(e => e.parameter2 / 127 * 100)
+                            .map(vol => Math.round(vol))
+                            .reduce((max, vel) => Math.max(max, vel), 1),
+                        events: t.events,
+                    };
+                }),
+            };
+        };
+
         let populateSmfGui = function(smf) {
             let smfAdapter = SmfAdapter(smf);
-            gui.trackList.innerHTML = '';
-            gui.smfFieldSet.removeAttribute('disabled');
-            gui.smfFieldSet.removeAttribute('title');
-            let oudTrackNum = smf.tracks.length > 1 ? 1 : 0;
-            let onlyOne = () => {
-                $$(':scope > tr.real', gui.trackList)
-                    .forEach(tr => {
-                        let occupied = $$('input[type="radio"]:checked', tr).length > 0;
-                        $$('input[type="radio"]:not(:checked)', tr).forEach(radio => {
-                            if (occupied) {
-                                radio.setAttribute('disabled', 'disabled');
-                            } else {
-                                radio.removeAttribute('disabled');
-                            }
-                        });
-                    });
-                $$(':scope > div', gui.regionListCont)
-                    .forEach(div => gui.updateScaleTimeRanges(div, smfAdapter));
-            };
-            let lastVisionFlagVal = true;
-            for (let i = 0; i < smf.tracks.length; ++i) {
-                let track = smf.tracks[i];
-                let tr = gui.trackTrRef.cloneNode(true);
-                tr.classList.add('real');
-                $$('.holder.track-number', tr)[0].innerHTML = i;
-                $$('.holder.track-name', tr)[0].innerHTML = track.trackName || '';
-                $$('.holder.event-cnt', tr)[0].innerHTML = track.events.length;
-                let maxVel = track.events
-                    .filter(isNoteOn).map(e => e.parameter2 / 127 * 100)
-                    .map(vol => Math.round(vol))
-                    .reduce((max, vel) => Math.max(max, vel), 1);
-                let velInp = $$('input.track-volume', tr)[0];
-                velInp.value = maxVel;
-                velInp.onchange = () => velInp.value = Math.max(0, Math.min(100, velInp.value));
-                $$('.holder.original-volume', tr)[0].innerHTML = maxVel;
-                let hideNotesCls = 'hide-notes-channel-' + i;
-                opt($$('.show-in-note-display', tr)[0]).get = flag => {
-                    flag.onclick = (e) => e.preventDefault();
-                    flag.onchange = () => {
-                        lastVisionFlagVal = flag.checked;
-                        flag.checked
-                            ? form.classList.remove(hideNotesCls)
-                            : form.classList.add(hideNotesCls);
-                    };
-                    opt(flag.parentNode).get = td => {
-                        td.onmousedown = (e) => checkAsUser(flag, !flag.checked);
-                        td.onmouseover = () => isMouseDown && checkAsUser(flag, lastVisionFlagVal);
-                    };
-                    flag.onchange();
-                };
-                let oudRadio = $$('input[name="isOudTrack"]', tr)[0];
-                let tablaRadio = $$('input[name="isTablaTrack"]', tr)[0];
-                oudRadio.value = i;
-                tablaRadio.value = i;
-                oudRadio.onchange = onlyOne;
-                tablaRadio.onchange = onlyOne;
-                let playBtn = $$('button.play-track', tr)[0];
-                playBtn.onclick = () => playTrack(
-                    i, oudRadio.checked, tablaRadio.checked, playBtn
-                );
-                if (i === oudTrackNum) {
-                    $$('input[name="isOudTrack"]', tr)[0].checked = true;
-                    $$('input[name="isTablaTrack"]', tr)[0].setAttribute('disabled', 'disabled');
-                }
-                gui.trackList.appendChild(tr);
-            }
-            let noneTr = gui.trackTrRef.cloneNode(true);
-            $$('.holder.track-number', noneTr)[0].innerHTML = 'None';
-            $$('input[name="isTablaTrack"]', noneTr)[0].checked = true;
-            $$('input[name="isTablaTrack"]', noneTr)[0].onchange = onlyOne;
-            $$('input[name="isOudTrack"]', noneTr)[0].remove();
-            $$('button.play-track', noneTr)[0].remove();
-            $$('.show-in-note-display', noneTr)[0].remove();
-            gui.trackList.appendChild(noneTr);
-            gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
+            let smfGui = gui.populateSmfGui(smfAdapter);
+            smfGui.onPlayTrackClick = playTrack;
 
-            let ticksToTempo = collectTicksToTempo(smf);
-            let tempos = Object.values(ticksToTempo);
-            let tempoStr = tempos.map(t => Math.round(t)).join(', ').slice(0, 20) || '120';
-            gui.tempoHolder.innerHTML = tempoStr;
-            gui.tempoInput.value = tempos.reduce((sum, t) => sum + t, 0) / tempos.length;
-            if (new Set(tempos).size > 1) {
-                // hide tempo input, show discard button
-                gui.tempoHolder.style.display = 'inline';
-                gui.discardTempoChangesBtn.style.display = 'inline';
-                gui.tempoInput.style.display = 'none';
-            } else {
-                // hide unmodifiable span
-                gui.tempoHolder.style.display = 'none';
-                gui.discardTempoChangesBtn.style.display = 'none';
-                gui.tempoInput.style.display = 'inline';
-            }
             // probably could reschedule animation instead of completely stopping...
             gui.tempoInput.onchange = () => stopAnimation();
 
-            $$(':scope > div', gui.regionListCont)
-                .forEach(div => gui.updateScaleTimeRanges(div, smfAdapter));
             noteDisplay = NoteDisplay(gui.noteDisplayCont, smf);
             noteDisplay.onNoteClick = (note) => opt(ranamSf).get = (sf) => {
                 let synth = Synth(audioCtx, sf, fluidSf);

@@ -7,6 +7,7 @@ var klesun = Klesun();
 klesun.requires('./Tls.js').then = (Tls) =>
 klesun.requires('./ScaleMapping.js').then = (ScaleMapping) =>
 klesun.whenLoaded = () => (form) => {
+    'use strict';
 
     let $$ = (s, root) => [...(root || document).querySelectorAll(s)];
     let {mkDom, promise, opt} = Tls();
@@ -34,6 +35,16 @@ klesun.whenLoaded = () => (form) => {
     let playOutputBtn = $$('button.play-output', form)[0];
     let testSf3DecodingBtn = $$('button.test-sf3-decoding', form)[0];
     let msgCont = $$('.message-container', form)[0];
+
+    let isMouseDown = false;
+    form.onmousedown = (e) => isMouseDown |= e.button === 0;
+    form.onmouseup = (e) => isMouseDown &= e.button !== 0;
+
+    let checkAsUser = function (checkbox, value) {
+        checkbox.checked = value;
+        let event = new Event('change');
+        checkbox.dispatchEvent(event);
+    };
 
     let showMessages = function(record) {
         msgCont.innerHTML = '';
@@ -100,7 +111,7 @@ klesun.whenLoaded = () => (form) => {
 
     let updateScaleTimeRanges = function (div, smfAdapter) {
         let formData = collectParams();
-        let ticksPerBeat = smfAdapter.tpb;
+        let ticksPerBeat = smfAdapter.ticksPerBeat;
         let totalTicks = smfAdapter.tracks[formData.oudTrackNum].totalTicks;
         let totalNotes = smfAdapter.tracks[formData.oudTrackNum].totalNotes;
 
@@ -199,12 +210,114 @@ klesun.whenLoaded = () => (form) => {
         onchange();
     };
 
+    let populateSmfGui = function(smfAdapter) {
+        trackList.innerHTML = '';
+        smfFieldSet.removeAttribute('disabled');
+        smfFieldSet.removeAttribute('title');
+        let oudTrackNum = smfAdapter.tracks.length > 1 ? 1 : 0;
+        let playTrack = (trackNum, isOud, isTabla, playBtn) =>
+            showMessages({errors: ['Action should be assigned outside']});
+        let onlyOne = () => {
+            $$(':scope > tr.real', trackList)
+                .forEach(tr => {
+                    let occupied = $$('input[type="radio"]:checked', tr).length > 0;
+                    $$('input[type="radio"]:not(:checked)', tr).forEach(radio => {
+                        if (occupied) {
+                            radio.setAttribute('disabled', 'disabled');
+                        } else {
+                            radio.removeAttribute('disabled');
+                        }
+                    });
+                });
+            $$(':scope > div', regionListCont)
+                .forEach(div => updateScaleTimeRanges(div, smfAdapter));
+        };
+        let lastVisionFlagVal = true;
+        for (let i = 0; i < smfAdapter.tracks.length; ++i) {
+            let track = smfAdapter.tracks[i];
+            let tr = trackTrRef.cloneNode(true);
+            tr.classList.add('real');
+            $$('.holder.track-number', tr)[0].innerHTML = i;
+            $$('.holder.track-name', tr)[0].innerHTML = track.trackName || '';
+            $$('.holder.event-cnt', tr)[0].innerHTML = track.events.length;
+            let maxVel = track.maxVelocity;
+            let velInp = $$('input.track-volume', tr)[0];
+            velInp.value = maxVel;
+            velInp.onchange = () => velInp.value = Math.max(0, Math.min(100, velInp.value));
+            $$('.holder.original-volume', tr)[0].innerHTML = maxVel;
+            let hideNotesCls = 'hide-notes-channel-' + i;
+            opt($$('.show-in-note-display', tr)[0]).get = flag => {
+                flag.onclick = (e) => e.preventDefault();
+                flag.onchange = () => {
+                    lastVisionFlagVal = flag.checked;
+                    flag.checked
+                        ? form.classList.remove(hideNotesCls)
+                        : form.classList.add(hideNotesCls);
+                };
+                opt(flag.parentNode).get = td => {
+                    td.onmousedown = (e) => checkAsUser(flag, !flag.checked);
+                    td.onmouseover = () => isMouseDown && checkAsUser(flag, lastVisionFlagVal);
+                };
+                flag.onchange();
+            };
+            let oudRadio = $$('input[name="isOudTrack"]', tr)[0];
+            let tablaRadio = $$('input[name="isTablaTrack"]', tr)[0];
+            oudRadio.value = i;
+            tablaRadio.value = i;
+            oudRadio.onchange = onlyOne;
+            tablaRadio.onchange = onlyOne;
+            let playBtn = $$('button.play-track', tr)[0];
+            playBtn.onclick = () => playTrack(
+                i, oudRadio.checked, tablaRadio.checked, playBtn
+            );
+            if (i === oudTrackNum) {
+                $$('input[name="isOudTrack"]', tr)[0].checked = true;
+                $$('input[name="isTablaTrack"]', tr)[0].setAttribute('disabled', 'disabled');
+            }
+            trackList.appendChild(tr);
+        }
+        let noneTr = trackTrRef.cloneNode(true);
+        $$('.holder.track-number', noneTr)[0].innerHTML = 'None';
+        $$('input[name="isTablaTrack"]', noneTr)[0].checked = true;
+        $$('input[name="isTablaTrack"]', noneTr)[0].onchange = onlyOne;
+        $$('input[name="isOudTrack"]', noneTr)[0].remove();
+        $$('button.play-track', noneTr)[0].remove();
+        $$('.show-in-note-display', noneTr)[0].remove();
+        trackList.appendChild(noneTr);
+        ticksPerBeatHolder.innerHTML = smfAdapter.ticksPerBeat;
+
+        let ticksToTempo = smfAdapter.ticksToTempo;
+        let tempos = Object.values(ticksToTempo);
+        let tempoStr = tempos.map(t => Math.round(t)).join(', ').slice(0, 20) || '120';
+        tempoHolder.innerHTML = tempoStr;
+        tempoInput.value = tempos.reduce((sum, t) => sum + t, 0) / tempos.length;
+        if (new Set(tempos).size > 1) {
+            // hide tempo input, show discard button
+            tempoHolder.style.display = 'inline';
+            discardTempoChangesBtn.style.display = 'inline';
+            tempoInput.style.display = 'none';
+        } else {
+            // hide unmodifiable span
+            tempoHolder.style.display = 'none';
+            discardTempoChangesBtn.style.display = 'none';
+            tempoInput.style.display = 'inline';
+        }
+        $$(':scope > div', regionListCont)
+            .forEach(div => updateScaleTimeRanges(div, smfAdapter));
+        return {
+            set onPlayTrackClick(cb) {
+                playTrack = cb;
+            },
+        };
+    };
+
     return {
         collectParams: collectParams,
         showMessages: showMessages,
         switchWithStopBtn: switchWithStopBtn,
         updateScaleTimeRanges: updateScaleTimeRanges,
         initScale: initScale,
+        populateSmfGui: populateSmfGui,
         // I desire to replace them all with value getters/setters one day
         smfInput: smfInput,
         sf2Input: sf2Input,
