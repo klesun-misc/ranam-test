@@ -13,6 +13,8 @@ define([], () => (form) => {
         smfFieldSet: $$('fieldset.needs-smf', form)[0],
         ticksPerBeatHolder: $$('.ticks-per-beat', form)[0],
         tempoHolder: $$('.tempo-holder', form)[0],
+        discardTempoChangesBtn: $$('button.discard-tempo-changes', form)[0],
+        tempoInput: $$('input.tempo', form)[0],
         trackList: $$('tbody.current-tracks', form)[0],
         trackTrRef: $$('.current-tracks tr')[0].cloneNode(true),
         regionListCont: $$('.region-list', form)[0],
@@ -44,6 +46,7 @@ define([], () => (form) => {
     };
 
     let collectParams = () => 1 && {
+        tempo: gui.tempoInput.style.display !== 'none' ? gui.tempoInput.value : null,
         scaleRegions: $$(':scope > *', gui.regionListCont).map(collectRegion),
         oudTrackNum: $$('[name="isOudTrack"]:checked', gui.trackList).map(r => +r.value)[0],
         tablaTrackNum: $$('[name="isTablaTrack"]:checked', gui.trackList).map(r => +r.value || null)[0],

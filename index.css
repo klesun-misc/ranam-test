@@ -98,6 +98,8 @@ form.playing button.destroy-when-music-stops {
     overflow-y: scroll;
     resize: vertical;
     position: relative;
+    /* does not seem do decrease CPU usage sadly */
+    /*will-change: scroll-position;*/
 }
 .time-pointer {
     position: absolute;

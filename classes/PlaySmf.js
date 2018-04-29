@@ -1,8 +1,10 @@
 
 var klesun = Klesun();
+klesun.requires('./Tls.js').then = (Tls) =>
 klesun.requires('./MidiUtil.js').then = (MidiUtil) =>
 klesun.whenLoaded = () => (smfReader, synth, getParams) => {
 
+    let {opt} = Tls();
     let {isNoteOn, scaleVelocity, ticksToMillis} = MidiUtil();
 
     /** do setTimeout() or do on this thread if time is zero */
@@ -32,7 +34,6 @@ klesun.whenLoaded = () => (smfReader, synth, getParams) => {
     let stopped = false;
     let chordIndex = -1;
     let whenDones = [];
-    let onSteps = [];
     let startParams = getParams();
 
     /** update volume from config, add tempo event if needed (TODO) */
@@ -55,18 +56,17 @@ klesun.whenLoaded = () => (smfReader, synth, getParams) => {
         });
     };
 
-    let startTime = window.performance.now();
+    let tempoStartTime = window.performance.now();
+    let tempoStartTicks = 0;
     let playNext = () => {
         if (stopped) {
             synth.stopAll();
         } else if (++chordIndex < ticksPerChord.length) {
             let ticks = ticksPerChord[chordIndex];
-            let nextTime = ticksToMillis(ticks, smfReader.ticksPerBeat, tempo);
-            let timeSkip = startTime + nextTime - window.performance.now();
-            onSteps.forEach(cb => cb(ticks, timeSkip));
+            let nextTime = ticksToMillis(ticks - tempoStartTicks, smfReader.ticksPerBeat, tempo);
+            let timeSkip = tempoStartTime + nextTime - window.performance.now();
             nowOrLater(timeSkip, () => {
                 for (let event of transformEvents(ticksToEvents[ticks])) {
-                // for (let {event, trackNum} of ticksToEvents[ticks]) {
                     if (event.type === 'MIDI') {
                         synth.handleMidiEvent(event);
                     } else if (event.type === 'meta') {
@@ -74,6 +74,8 @@ klesun.whenLoaded = () => (smfReader, synth, getParams) => {
                         if (event.metaType === 81) { // tempo
                             // TODO: update currently sounding notes
                             tempo = 60 * 1000000 / event.metaData.reduce((a,b) => (a << 8) + b, 0);
+                            tempoStartTime = tempoStartTime + nextTime;
+                            tempoStartTicks = ticks;
                         }
                     }
                 }
@@ -93,7 +95,6 @@ klesun.whenLoaded = () => (smfReader, synth, getParams) => {
                 whenDones.push(whenDone);
             }
         },
-        set onStep(callback) { onSteps.push(callback); },
         stop: () => stopped = true,
     };
 };

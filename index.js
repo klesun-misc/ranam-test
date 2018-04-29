@@ -339,15 +339,16 @@
                 let hideNotesCls = 'hide-notes-channel-' + i;
                 opt($$('.show-in-note-display', tr)[0]).get = flag => {
                     flag.onclick = (e) => e.preventDefault();
-                    flag.onmousedown = (e) => checkAsUser(flag, !flag.checked);
                     flag.onchange = () => {
                         lastVisionFlagVal = flag.checked;
                         flag.checked
                             ? form.classList.remove(hideNotesCls)
                             : form.classList.add(hideNotesCls);
                     };
-                    opt(flag.parentNode).get = td => td.onmouseover = () =>
-                        isMouseDown && checkAsUser(flag, lastVisionFlagVal);
+                    opt(flag.parentNode).get = td => {
+                        td.onmousedown = (e) => checkAsUser(flag, !flag.checked);
+                        td.onmouseover = () => isMouseDown && checkAsUser(flag, lastVisionFlagVal);
+                    };
                     flag.onchange();
                 };
                 let oudRadio = $$('input[name="isOudTrack"]', tr)[0];
@@ -380,6 +381,18 @@
             let tempos = Object.values(ticksToTempo);
             let tempoStr = tempos.map(t => Math.round(t)).join(', ') || '120';
             gui.tempoHolder.innerHTML = tempoStr;
+            gui.tempoInput.value = tempos.reduce((sum, t) => sum + t, 0) / tempos.length;
+            if (new Set(tempos).size > 1) {
+                // hide tempo input, show discard button
+                gui.tempoHolder.style.display = 'inline';
+                gui.discardTempoChangesBtn.style.display = 'inline';
+                gui.tempoInput.style.display = 'none';
+            } else {
+                // hide unmodifiable span
+                gui.tempoHolder.style.display = 'none';
+                gui.discardTempoChangesBtn.style.display = 'none';
+                gui.tempoInput.style.display = 'inline';
+            }
 
             $$(':scope > div', gui.regionListCont)
                 .forEach(div => updateScaleTimeRanges(div));

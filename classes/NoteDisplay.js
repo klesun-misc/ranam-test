@@ -66,7 +66,7 @@ klesun.whenLoaded = () => {
 
         smf = JSON.parse(JSON.stringify(smf));
         let {notes, otherEvents} = collectNotes(smf);
-        let lastTick = notes.map(n => n.time).reduce((max, t) => Math.max(max, t), 0);
+        let lastTick = notes.reduce((max, n) => Math.max(max, n.time + n.dura), 0);
         let noteList = $$('.note-list', container)[0];
         let scroll = $$('.scroll', container)[0];
 
@@ -76,7 +76,7 @@ klesun.whenLoaded = () => {
             rows.forEach(r => r.innerHTML = '');
             for (let note of notes) {
                 let {tone, dura, time, chan, velo, track} = note;
-                let yOffset = 96 - tone;
+                let yOffset = 108 - tone;
                 if (yOffset > 0 && yOffset < rows.length) {
                     let row = rows[yOffset];
                     row.appendChild(mkDom('div', {
@@ -132,30 +132,31 @@ klesun.whenLoaded = () => {
         let animatePointer = function(ticksToTempo, ticksPerBeat) {
             stopTempoScheduling();
             let tempo = 120;
-            let ticks = 0;
             let stopped = false;
             scroll.scrollLeft = 0;
             let entries = Object.entries(ticksToTempo);
-            let startTime = window.performance.now();
+            let tempoStartTime = window.performance.now();
+            let tempoStartTicks = 0;
             let doNext = (i) => {
                 if (stopped) {
                     // ^_^ do nothing
                 } else if (i < entries.length) {
                     // scroll till next tempo
                     let [nextTicks, nextTempo] = entries[i];
-                    let nextTime = ticksToMillis(nextTicks, ticksPerBeat, tempo);
-                    let timeSkip = startTime + nextTime - window.performance.now();
+                    let nextTime = ticksToMillis(nextTicks - tempoStartTicks, ticksPerBeat, tempo);
+                    let timeSkip = tempoStartTime + nextTime - window.performance.now();
                     setPointerAt(nextTicks, timeSkip);
                     nowOrLater(timeSkip).then = () => {
                         tempo = nextTempo;
-                        ticks = nextTicks;
+                        tempoStartTime = tempoStartTime + nextTime;
+                        tempoStartTicks = nextTicks;
                         doNext(i + 1);
                     };
                 } else {
                     // scroll what left
                     let nextTicks = lastTick;
-                    let nextTime = ticksToMillis(nextTicks, ticksPerBeat, tempo);
-                    let timeSkip = startTime + nextTime - window.performance.now();
+                    let nextTime = ticksToMillis(nextTicks - tempoStartTicks, ticksPerBeat, tempo);
+                    let timeSkip = tempoStartTime + nextTime - window.performance.now();
                     setPointerAt(nextTicks, timeSkip);
                 }
             };

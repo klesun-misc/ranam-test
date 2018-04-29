@@ -18,7 +18,14 @@
             <button class="play-input" type="button" onclick="alert('Load soundfont first')">Play original</button>
             <br/>
             <label>♩ = <span class="ticks-per-beat">?</span> ticks</label><br/>
-            <label><img width="12px" src="./img/metronome.png"/> = <span class="tempo-holder">?</span> ♩ per minute</label><br/>
+            <label>
+                <img width="12px" src="./img/metronome.png"/> =
+                <span class="tempo-holder">120</span>
+                <button class="discard-tempo-changes" style="display: none" type="button" onclick="alert('TODO: implement');">Discard tempo changes</button>
+                <input disabled="disabled" class="tempo" style="display: none; width: 44px;" type="number" value="120" step="10" min="20" max="900"/>
+                ♩ per minute
+            </label>
+            <br/>
             <table>
                 <thead>
                     <tr>
@@ -43,7 +50,7 @@
                         <td><input type="radio" name="isTablaTrack" value=""/></td>
                         <td><input style="text-align: right; width: 44px;" type="number" class="track-volume" value="0" min="1" max="100" step="10" style="width: 44px"/>%</td>
                         <td style="text-align: right;"><span class="holder original-volume">0</span>%</td>
-                        <td><input type="checkbox" class="show-in-note-display" checked="checked"/></td>
+                        <td style="user-select: none"><input type="checkbox" class="show-in-note-display" checked="checked"/></td>
                         <td><button type="button" class="play-track" onclick="alert('Load MIDI file first!');">Play</button></td>
                     </tr>
                 </tbody>
@@ -130,6 +137,19 @@
         <div class="time-pointer"></div>
         <div class="scroll">
             <div class="note-list">
+                <div class="ivory"></div>
+                <div class="ebony"></div>
+                <div class="ivory"></div>
+
+                <div class="ivory"></div> <!-- Do -->
+                <div class="ebony"></div>
+                <div class="ivory"></div>
+                <div class="ebony"></div>
+                <div class="ivory"></div>
+                <div class="ivory"></div>
+                <div class="ebony"></div>
+                <div class="ivory"></div>
+                <div class="ebony"></div>
                 <div class="ivory"></div>
                 <div class="ebony"></div>
                 <div class="ivory"></div>
