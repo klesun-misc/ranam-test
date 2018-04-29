@@ -221,22 +221,20 @@ klesun.whenLoaded = () => (form) => {
         let updateAllScaleRanges = () => $$(':scope > div', regionListCont)
             .forEach(div => updateScaleTimeRanges(div, smfAdapter));
 
-        let lastTrackNums = {};
-        let onlyOne = (trackNum, tr, isOud) => {
+        let nameToLastTrackNum = {};
+        let onlyOne = (trackNum, tr, name) => {
             let trs = $$(':scope > tr', trackList);
-            let oudFlag = $$('input[type="radio"][name="isOudTrack"]', tr)[0];
-            let tablaFlag = $$('input[type="radio"][name="isTablaTrack"]', tr)[0];
-            if (oudFlag.checked && tablaFlag.checked) {
+            let changed = $$('input[type="radio"][name="' + name + '"]', tr)[0];
+            let neighbor = $$('input[type="radio"]:not([name="' + name + '"])', tr)[0];
+            if (changed.checked && neighbor.checked) {
                 // swap them
-                let oldTrackNum = lastTrackNums[isOud];
-                let neighbor = isOud ? tablaFlag : oudFlag;
-                let neighborName = isOud ? 'isTablaTrack' : 'isOudTrack';
+                let oldTrackNum = nameToLastTrackNum[name];
                 neighbor.checked = false;
                 let oldTr = trs[oldTrackNum];
-                let selector = 'input[type="radio"][name="' + neighborName + '"]';
+                let selector = 'input[type="radio"][name="' + neighbor.name + '"]';
                 if (oldTrackNum !== undefined && oldTrackNum !== trackNum && oldTr) {
                     $$(selector, oldTr)[0].checked = true;
-                    lastTrackNums[!isOud] = oldTrackNum;
+                    nameToLastTrackNum[neighbor.name] = oldTrackNum;
                 } else {
                     // or just put it on any free row
                     let trackNums = new Set(range(0, trs.length));
@@ -245,14 +243,14 @@ klesun.whenLoaded = () => (form) => {
                         let tr = trs[trackNum];
                         if (tr) {
                             $$(selector, tr)[0].checked = true;
-                            lastTrackNums[!isOud] = trackNum;
+                            nameToLastTrackNum[neighbor.name] = trackNum;
                             break;
                         }
                     }
                 }
             }
             updateAllScaleRanges();
-            lastTrackNums[isOud] = trackNum;
+            nameToLastTrackNum[name] = trackNum;
         };
         let lastVisionFlagVal = true;
         for (let i = 0; i < smfAdapter.tracks.length; ++i) {
@@ -285,8 +283,8 @@ klesun.whenLoaded = () => (form) => {
             let tablaRadio = $$('input[name="isTablaTrack"]', tr)[0];
             oudRadio.value = i;
             tablaRadio.value = i;
-            oudRadio.onchange = () => onlyOne(i, tr, true);
-            tablaRadio.onchange = () => onlyOne(i, tr, false);
+            oudRadio.onchange = () => onlyOne(i, tr, 'isOudTrack');
+            tablaRadio.onchange = () => onlyOne(i, tr, 'isTablaTrack');
             let playBtn = $$('button.play-track', tr)[0];
             playBtn.onclick = () => playTrack(
                 i, oudRadio.checked, tablaRadio.checked, playBtn
