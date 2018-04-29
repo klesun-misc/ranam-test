@@ -78,6 +78,13 @@ klesun.whenLoaded = () => (smfReader, synth, getParams) => {
                             tempoStartTicks = ticks;
                         }
                     }
+                    opt(getParams().tempo).get = t => {
+                        if (t != tempo) {
+                            tempo = t;
+                            tempoStartTime = tempoStartTime + nextTime;
+                            tempoStartTicks = ticks;
+                        }
+                    };
                 }
                 playNext();
             });

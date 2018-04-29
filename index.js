@@ -58,6 +58,11 @@
         };
 
         let getTicksToTempo = function (smf) {
+            let overwrittenTempo = collectParams().tempo;
+            if (overwrittenTempo) {
+                return {0: overwrittenTempo};
+            }
+
             let ticksToTempo = {};
             for (let track of smf.tracks) {
                 let ticks = 0;

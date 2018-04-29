@@ -8,9 +8,55 @@
 
 var klesun = Klesun();
 klesun.requires('./MidiUtil.js').then = (MidiUtil) =>
+klesun.requires('./Tls.js').then = (Tls) =>
 klesun.whenLoaded = () => (smfReader, formParams) => {
 
+    let {opt} = Tls();
     let {isNoteOn, isNoteOff, isPitchBend, scaleVelocity} = MidiUtil();
+
+    /** @param {float} absolute koef [-1 ... +1].
+     * multiply by current bend range to get the shift in semitone
+     * examples if bend radius is set to 2
+     * makePitchBend(1.75, 0) will highen pitch 2 * 1.75 = 3.5 semitone for zeroth channel
+     * makePitchBend(-1.01, 4) will lower pitch 2 * 1.01 = 2.02 semitone for fourth channel */
+    let makePitchBend = function(koef, channel)
+    {
+        let intvalue = Math.round(16383 / 2 * (koef + 1));
+        let [b1,b2] = [intvalue % 128, (intvalue >> 7) % 128];
+
+        return new Midi.Event({
+            type: Midi.Event.PITCH_BEND,
+            channel: channel,
+            param1: b1,
+            param2: b2,
+            time: 0,
+        });
+    };
+
+    let makeOudEvents = function(channel) {
+        return [
+            new Midi.Event({
+                type: Midi.Event.CONTROLLER,
+                channel: channel,
+                param1: 0, // bank select
+                param2: 121,
+                time: 0,
+            }),
+            new Midi.Event({
+                type: Midi.Event.CONTROLLER,
+                channel: channel,
+                param1: 32, // bank select 2
+                param2: 0,
+                time: 0,
+            }),
+            new Midi.Event({
+                type: Midi.Event.PROGRAM_CHANGE,
+                channel: channel,
+                param1: 123, // bird tweet
+                time: 0,
+            }),
+        ];
+    };
 
     /** take events that happen at current tick */
     let takeTickEvents = function(events, startOffset)
@@ -125,50 +171,6 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
         return null;
     };
 
-    /** @param {float} absolute koef [-1 ... +1].
-     * multiply by current bend range to get the shift in semitone
-     * examples if bend radius is set to 2
-     * makePitchBend(1.75, 0) will highen pitch 2 * 1.75 = 3.5 semitone for zeroth channel
-     * makePitchBend(-1.01, 4) will lower pitch 2 * 1.01 = 2.02 semitone for fourth channel */
-    let makePitchBend = function(koef, channel)
-    {
-        let intvalue = Math.round(16383 / 2 * (koef + 1));
-        let [b1,b2] = [intvalue % 128, (intvalue >> 7) % 128];
-
-        return new Midi.Event({
-            type: Midi.Event.PITCH_BEND,
-            channel: channel,
-            param1: b1,
-            param2: b2,
-            time: 0,
-        });
-    };
-
-    let makeOudEvents = function(channel) {
-        return [
-            new Midi.Event({
-                type: Midi.Event.CONTROLLER,
-                channel: channel,
-                param1: 0, // bank select
-                param2: 121,
-                time: 0,
-            }),
-            new Midi.Event({
-                type: Midi.Event.CONTROLLER,
-                channel: channel,
-                param1: 32, // bank select 2
-                param2: 0,
-                time: 0,
-            }),
-            new Midi.Event({
-                type: Midi.Event.PROGRAM_CHANGE,
-                channel: channel,
-                param1: 123, // bird tweet
-                time: 0,
-            }),
-        ];
-    };
-
     let readerToJsmidgenEvent = function(readerEvent, trackNum)
     {
         let isOudTrack = trackNum === formParams.oudTrackNum;
@@ -228,6 +230,9 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
                 // End Of Track message, will be added automatically by
                 // jsmidgen, so no need to dupe it, it causes problems
                 return null;
+            } else if (readerEvent.metaType === 81 && formParams.tempo) {
+                // tempo overwritten by params
+                return null;
             } else {
                 return new Midi.MetaEvent({
                     time: readerEvent.delta,
@@ -263,6 +268,10 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
                 // add control change event and program change 123, bird tweet
                 makeOudEvents(0)
                     .forEach(e => jsmidgenTrack.addEvent(e));
+            }
+            if (i === 0) { // meta track
+                opt(formParams.tempo).get = tempo =>
+                    jsmidgenTrack.setTempo(tempo)
             }
 
             let noteIdx = -1;
