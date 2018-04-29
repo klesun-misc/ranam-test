@@ -23,7 +23,11 @@
         let fluidSf = null;
         let noteDisplay = null;
         let stopPlayback = () => {};
-        
+
+        let isMouseDown = false;
+        form.onmousedown = (e) => isMouseDown |= e.button === 0;
+        form.onmouseup = (e) => isMouseDown &= e.button !== 0;
+
         let preloadSamples = (smfReader, synth, ranamSf2) => promise(done => {
             let fluidOk = !fluidSf ? true : false;
             let ranamOk = false;
@@ -236,6 +240,12 @@
             }
         };
 
+        let checkAsUser = function (checkbox, value) {
+            checkbox.checked = value;
+            let event = new Event('change');
+            checkbox.dispatchEvent(event);
+        };
+
         /** change all preset/bank change messages to 121/123 */
         let oudizeTrack = function(track) {
             // preset event
@@ -312,6 +322,7 @@
                 $$(':scope > div', gui.regionListCont)
                     .forEach(div => updateScaleTimeRanges(div));
             };
+            let lastVisionFlagVal = true;
             for (let i = 0; i < smf.tracks.length; ++i) {
                 let track = smf.tracks[i];
                 let tr = gui.trackTrRef.cloneNode(true);
@@ -329,9 +340,16 @@
                 $$('.holder.original-volume', tr)[0].innerHTML = maxVel;
                 let hideNotesCls = 'hide-notes-channel-' + i;
                 opt($$('.show-in-note-display', tr)[0]).get = flag => {
-                    flag.onchange = () => !flag.checked
-                        ? form.classList.add(hideNotesCls)
-                        : form.classList.remove(hideNotesCls);
+                    flag.onclick = (e) => e.preventDefault();
+                    flag.onmousedown = (e) => checkAsUser(flag, !flag.checked);
+                    flag.onchange = () => {
+                        lastVisionFlagVal = flag.checked;
+                        flag.checked
+                            ? form.classList.remove(hideNotesCls)
+                            : form.classList.add(hideNotesCls);
+                    };
+                    opt(flag.parentNode).get = td => td.onmouseover = () =>
+                        isMouseDown && checkAsUser(flag, lastVisionFlagVal);
                     flag.onchange();
                 };
                 let oudRadio = $$('input[name="isOudTrack"]', tr)[0];
@@ -356,6 +374,7 @@
             $$('input[name="isTablaTrack"]', noneTr)[0].onchange = onlyOne;
             $$('input[name="isOudTrack"]', noneTr)[0].remove();
             $$('button.play-track', noneTr)[0].remove();
+            $$('.show-in-note-display', noneTr)[0].remove();
             gui.trackList.appendChild(noneTr);
             gui.ticksPerBeatHolder.innerHTML = smf.ticksPerBeat;
 
