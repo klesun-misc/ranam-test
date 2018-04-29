@@ -3,10 +3,10 @@ var klesun = Klesun();
 klesun.requires('./MidiUtil.js').then = (MidiUtil) =>
 klesun.whenLoaded = () => (smfReader, synth, getParams) => {
 
-    let {isNoteOn, scaleVelocity} = MidiUtil();
+    let {isNoteOn, scaleVelocity, ticksToMillis} = MidiUtil();
 
     /** do setTimeout() or do on this thread if time is zero */
-    let timeoutAsap = (millis, callback) => {
+    let nowOrLater = (millis, callback) => {
         if (millis > 0) {
             setTimeout(callback, millis);
         } else {
@@ -32,6 +32,7 @@ klesun.whenLoaded = () => (smfReader, synth, getParams) => {
     let stopped = false;
     let chordIndex = -1;
     let whenDones = [];
+    let onSteps = [];
     let startParams = getParams();
 
     /** update volume from config, add tempo event if needed (TODO) */
@@ -60,10 +61,10 @@ klesun.whenLoaded = () => (smfReader, synth, getParams) => {
             synth.stopAll();
         } else if (++chordIndex < ticksPerChord.length) {
             let ticks = ticksPerChord[chordIndex];
-            let academic = ticks / smfReader.ticksPerBeat / 4;
-            let nextTime = 1000 * academic * 60 / (tempo / 4);
+            let nextTime = ticksToMillis(ticks, smfReader.ticksPerBeat, tempo);
             let timeSkip = startTime + nextTime - window.performance.now();
-            timeoutAsap(timeSkip, () => {
+            onSteps.forEach(cb => cb(ticks, timeSkip));
+            nowOrLater(timeSkip, () => {
                 for (let event of transformEvents(ticksToEvents[ticks])) {
                 // for (let {event, trackNum} of ticksToEvents[ticks]) {
                     if (event.type === 'MIDI') {
@@ -92,6 +93,7 @@ klesun.whenLoaded = () => (smfReader, synth, getParams) => {
                 whenDones.push(whenDone);
             }
         },
+        set onStep(callback) { onSteps.push(callback); },
         stop: () => stopped = true,
     };
 };

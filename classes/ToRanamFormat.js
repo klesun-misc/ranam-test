@@ -320,7 +320,6 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
 
     let main = function()
     {
-        /** @debug */
         console.log(formParams);
 
         let normalized = normalizeSmf();

@@ -21,6 +21,7 @@
 
         let audioCtx = new AudioContext();
         let fluidSf = null;
+        let noteDisplay = null;
         let stopPlayback = () => {};
         
         let preloadSamples = (smfReader, synth, ranamSf2) => promise(done => {
@@ -44,52 +45,6 @@
             });
         });
 
-        let playSmf = (smf, sf2, btn) => {
-            let synth = Synth(audioCtx, ranamSf, fluidSf);
-            preloadSamples(smf, synth, sf2).then = () => {
-                stopPlayback();
-                form.classList.add('playing');
-                let playbackFinished = () => {
-                    form.classList.remove('playing');
-                    $$('.destroy-when-music-stops', form)
-                        .forEach(dom => dom.remove());
-                    $$('button.current-source')
-                        .forEach(dom => dom.classList.remove('current-source'));
-                };
-
-                let playback = PlaySmf(smf, synth, () => collectParams(gui));
-                playback.then = playbackFinished;
-                stopPlayback = () => {
-                    playbackFinished();
-                    playback.stop();
-                };
-                switchWithStopBtn(btn);
-            };
-        };
-        let currentSmf = null;
-        let ranamSf = null;
-        let noteDisplay = null;
-
-        let loadSelectedFile = function (fileInfo, whenLoaded) {
-            if (!fileInfo) {
-                // if user cancelled "Choose File" pop-up
-                return null;
-            }
-
-            let reader = new FileReader();
-            // reader.readAsDataURL(fileInfo);
-            reader.readAsArrayBuffer(fileInfo);
-            reader.onload = (e) => {
-                whenLoaded(e.target.result);
-            }
-        };
-
-        let saveMidiToDisc = function(buff)
-        {
-            let blob = new Blob([buff], {type: "midi/binary"});
-            saveAs(blob, 'ranam_song.mid', true);
-        };
-
         let getTotalTicks = function (events) {
             return events.reduce((sum, e) => sum + e.delta, 0);
         };
@@ -111,6 +66,57 @@
                 }
             }
             return ticksToTempo;
+        };
+
+        let playSmf = (smf, sf2, btn) => {
+            let synth = Synth(audioCtx, ranamSf, fluidSf);
+            preloadSamples(smf, synth, sf2).then = () => {
+                stopPlayback();
+                form.classList.add('playing');
+                let playbackFinished = () => {
+                    form.classList.remove('playing');
+                    $$('.destroy-when-music-stops', form)
+                        .forEach(dom => dom.remove());
+                    $$('button.current-source')
+                        .forEach(dom => dom.classList.remove('current-source'));
+                };
+
+                let playback = PlaySmf(smf, synth, () => collectParams(gui));
+                playback.then = playbackFinished;
+                switchWithStopBtn(btn);
+                //playback.onStep = (ticks, duration) => opt(noteDisplay)
+                //    .get = disp => disp.setPointerAt(ticks, duration);
+                let ticksToTempo = getTicksToTempo(smf);
+                let stopScroll = opt(noteDisplay).map(disp => disp.animatePointer(
+                    ticksToTempo, smf.ticksPerBeat)).def(() => {});
+                stopPlayback = () => {
+                    playbackFinished();
+                    stopScroll();
+                    playback.stop();
+                };
+            };
+        };
+        let currentSmf = null;
+        let ranamSf = null;
+
+        let loadSelectedFile = function (fileInfo, whenLoaded) {
+            if (!fileInfo) {
+                // if user cancelled "Choose File" pop-up
+                return null;
+            }
+
+            let reader = new FileReader();
+            // reader.readAsDataURL(fileInfo);
+            reader.readAsArrayBuffer(fileInfo);
+            reader.onload = (e) => {
+                whenLoaded(e.target.result);
+            }
+        };
+
+        let saveMidiToDisc = function(buff)
+        {
+            let blob = new Blob([buff], {type: "midi/binary"});
+            saveAs(blob, 'ranam_song.mid', true);
         };
 
         let switchWithStopBtn = function(playBtn) {
@@ -414,7 +420,6 @@
                 let params = collectParams(gui);
                 let buff = ToRanamFormat(currentSmf, params);
                 if (buff) {
-                    /** @debug */
                     console.log('Converted SMF', Ns.Libs.SMFreader(buff).tracks);
                     saveMidiToDisc(buff);
                 }

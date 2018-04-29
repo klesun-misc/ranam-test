@@ -101,7 +101,8 @@ define([], () => (audioCtx, sf2Adapter, fluidSf2) => {
                 velocity: parameter2, preset: channel.preset,
             };
             let useRanamSf2 = false;
-            /** @debug, dunno why, but bank/program are different in sf2 from what we set in the converter */
+            // I guess it is hardcoded somewhere in Ranam app that bank/program
+            // are such no matter what they actually are in the soundfont
             if (params.bank == 121 && params.preset == 123) { // Ranam Oud
                 params.bank = 20;
                 params.preset = 25;

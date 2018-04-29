@@ -65,32 +65,43 @@ form.playing button.current-source {
 form.playing button.destroy-when-music-stops {
     box-shadow: 0 0 13px 4.5px rgb(189, 98, 195);
 }
-.note-display-cont > .ebony {
-    background-color: #9a9a9a;
+.note-list > .ebony {
+    background-color: #474747c2;
 }
-.note-display-cont > .ivory {
-    background-color: #e6e6e6;
+.note-list > .ivory {
+    background-color: #3d3d3d91;
 }
-.note-display-cont > * {
-    border: 1px solid black;
+.note-list > * {
+    border: 1px solid #545454;
     height: 8px;
     padding: 0;
     position: relative;
 }
-.note-display-cont > div:hover {
+.note-list > div:hover {
     filter: brightness(1.2);
 }
-.note-display-cont > * > * {
-    box-shadow:inset 0px 0px 0px 1px #cdcdcd;
+.note-list > * > * {
+    box-shadow: inset 0px 0px 0px 1.5px #cdcdcd;
 }
-.note-display-cont > * > div:hover {
+.note-list > * > div:hover {
     filter: saturate(3.5);
 }
-.note-display-scroll {
+.note-display-cont {
+    position: relative;
+}
+.note-display-cont .scroll {
     height: 500px;
-    /*overflow: auto;*/
+    overflow: auto;
     overflow-y: scroll;
     resize: vertical;
+    position: relative;
+}
+.time-pointer {
+    position: absolute;
+    width: 4px;
+    left: 20px;
+    height: 100%;
+    background-color: red;
 }
 
 body {

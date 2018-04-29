@@ -27,7 +27,6 @@ define([], () => (form) => {
         soundfontLoadingImg: $$('img.soundfont-loading', form)[0],
         playInputBtn: $$('button.play-input', form)[0],
         playOutputBtn: $$('button.play-output', form)[0],
-        /** @debug */
         testSf3DecodingBtn: $$('button.test-sf3-decoding', form)[0],
     };
 

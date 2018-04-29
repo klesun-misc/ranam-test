@@ -27,7 +27,6 @@ define([], () => (sf2Buf, audioCtx, isSf3) => {
 
     let sampleToAudio = {};
 
-    /** @debug */
     console.log('sf2 flat: ', root);
 
     /**
@@ -307,7 +306,6 @@ define([], () => (sf2Buf, audioCtx, isSf3) => {
 
     let bankToPresetToSamples = makeSampleTree();
 
-    /** @debug */
     console.log('sf2 tree: ', bankToPresetToSamples);
 
     let filterSamples = function(params)
