@@ -1,7 +1,7 @@
 span {
     display: inline-block;
 }
-button.remove-region, button.remove-pitched-note {
+button.remove {
     color: darkred;
     font-weight: bold;
     font-size: 10px;
@@ -9,12 +9,13 @@ button.remove-region, button.remove-pitched-note {
 input.pitch-result {
     width: 50px;
 }
-.region-list > * {
+.list > * {
     background-color: #6094c1;
     border: solid #b3e49a 2px;
     margin-bottom: 6px;
+    padding-left: 2px;
 }
-.region-list > * > span {
+.list > * > span {
     background-color: #d3ecef;
     border: solid white 2px;
     padding: 2px;
@@ -28,15 +29,6 @@ input.pitch-result {
 }
 input.pitch-bend {
     width: 60px;
-}
-table {
-    margin: 12px;
-    border-collapse: collapse;
-}
-td, th {
-    border: 1px solid black;
-    padding-left: 4px;
-    padding-right: 4px;
 }
 img.soundfont-loading {
     width: 100px;
@@ -133,6 +125,43 @@ input[type="file"].midi-file:invalid {
 .message-container .severity-warning {
     color: #c55e00;
 }
+
+.xml-data {
+    background-color: #d3ecef;
+    padding: 2px;
+    border: solid blue 1px;
+    text-align: center;
+}
+.xml-data > div {
+    margin: 2px;
+}
+.xml-data label {
+    margin: 2px;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+table.tracks {
+    margin: 12px;
+    border-collapse: collapse;
+}
+.tracks td, th {
+    border: 1px solid #38abcd;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+table.tracks > thead { background-color: #baffaf; }
+table.tracks > tbody { background-color: #f0ffff; }
+table.tracks > tbody > tr:not(.real) { background-color: #e8e8e8; }
+table.tracks .holder.track-number { text-align: right; }
+table.tracks .flag-cell {
+    text-align: center;
+    user-select: none;
+}
+table.tracks .flag-cell:active {
+    background-color: rgba(193, 255, 223, 0.8);
+}
+table.tracks .holder.event-cnt { text-align: right; }
 
 #midi-file-params.hide-notes-channel-0  .note-list > * > *[data-track="0"]  { display: none; }
 #midi-file-params.hide-notes-channel-1  .note-list > * > *[data-track="1"]  { display: none; }

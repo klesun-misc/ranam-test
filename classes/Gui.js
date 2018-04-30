@@ -22,8 +22,8 @@ klesun.whenLoaded = () => (form) => {
     let tempoInput = $$('input.tempo', form)[0];
     let trackList = $$('tbody.current-tracks', form)[0];
     let trackTrRef = $$('.current-tracks tr')[0].cloneNode(true);
-    let regionListCont = $$('.region-list', form)[0];
-    let regionRef = $$('.region-list > *', form)[0].cloneNode(true);
+    let regionListCont = $$('.region.list', form)[0];
+    let regionRef = $$('.region.list > *', form)[0].cloneNode(true);
     let pitchBendRef = $$('.pitch-bend-list > *', form)[0].cloneNode(true);
     let addAnotherRegionBtn = $$('button.add-another-region', form)[0];
     let resetRegionsBtn = $$('button.reset-regions', form)[0];
@@ -155,7 +155,7 @@ klesun.whenLoaded = () => (form) => {
         };
         $$('select.pitched-note', pitchBendSpan)[0].onchange = onchange;
         $$('input.pitch-bend', pitchBendSpan)[0].oninput = onchange;
-        $$('button.remove-pitched-note', pitchBendSpan)[0]
+        $$('button.remove.pitched-note', pitchBendSpan)[0]
             .onclick = () => {
             pitchBendSpan.remove();
             if ($$('.pitch-bend-list > *', scaleBlock).length === 0) {
@@ -195,7 +195,7 @@ klesun.whenLoaded = () => (form) => {
         let onchange = () => updateScaleInfo(div);
         $$('select.scale', div)[0].onchange = onchange;
         $$('select.key-note', div)[0].onchange = onchange;
-        $$('button.remove-region', div)[0].onclick = () => {
+        $$('button.remove.region', div)[0].onclick = () => {
             let regions = div.parentNode.children;
             if (regions.length > 1) {
                 console.log(regions);
@@ -284,7 +284,12 @@ klesun.whenLoaded = () => (form) => {
             oudRadio.value = i;
             tablaRadio.value = i;
             oudRadio.onchange = () => onlyOne(i, tr, 'isOudTrack');
+            opt(oudRadio.parentNode).get = (td) => td.onclick =
+                e => checkAsUser(oudRadio, true);
             tablaRadio.onchange = () => onlyOne(i, tr, 'isTablaTrack');
+            opt(tablaRadio.parentNode).get = (td) => td.onclick =
+                e => checkAsUser(tablaRadio, true);
+
             let playBtn = $$('button.play-track', tr)[0];
             playBtn.onclick = () => playTrack(
                 i, oudRadio.checked, tablaRadio.checked, playBtn

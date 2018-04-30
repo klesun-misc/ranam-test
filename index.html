@@ -11,18 +11,57 @@
     <p>This is a test page that converts General MIDI file to a Ranam-format MIDI file with Oud and Tabla</p>
     <p>It adds a quarter-tone pitch-bend on some regions defined by user. The note that gets pitch-bended depends on Scale</p>
 
+    <form class="xml-data">
+        <div style="text-align: center; font-weight: bold">
+            <span>XML data</span>
+            <button type="button" onclick="alert('TODO: implement!');">Save .xml file</button>
+        </div>
+        <label>Name: <input type="text" value="Ya Dar"/></label>
+        <label>Hide Flags: <input type="text" value="None"/></label>
+        <label>Product ID: <input type="number" value="731266" min="0"/></label>
+        <label>MIDI File Path: <input type="text" value="/Songs/Ya Dar.mid"/></label>
+        <div>
+            <label>Text Asset Name: <input type="text" value="Ya Dar.mid"/></label>
+            <label>Text Asset Hide Flags: <input type="text" value="NotEditable"/></label>
+        </div>
+        <div>
+            <label>Level: <select>
+                <option>Easy</option>
+                <option>Medium</option>
+                <option>Hard</option>
+            </select></label>
+            <label>Song Name Key: <input type="text" value="YaDar"/></label>
+            <label>Scale Name Key: <input type="text" value="Kord_La"/></label>
+        </div>
+        <div>
+            <label>Musician Name Key: <input type="text" value="RabehSagur"/></label>
+            <label>Is Locked: <input type="checkbox"/></label>
+            <label>Price: <input type="number" min="0.00" value="1" step="0.10"/></label>
+        </div>
+    </form>
     <form>
         <label>MIDI file: <input required="required" type="file" class="midi-file" accept=".mid"/></label><br/>
         <fieldset class="needs-smf" disabled="disabled" title="Load MIDI file first!">
+            <div style="padding: 8px;">
+                <label>Sentences:</label>
+                <button type="button" class="add-another-sentence" onclick="alert('TODO: implement!')">Add another sentence</button>
+                <span style="padding: 8px;" class="sentence list">
+                    <span>
+                        <span><button type="button" class="remove sentence" onclick="alert('TODO: implement!');">X</button></span>
+                        <span>From: <input type="number" value="0" step="1" min="0" max="100" class="from"/></span>
+                        <span>To: <input type="number" value="0" step="1" min="0" max="100" class="to"/></span>
+                    </span>
+                </span>
+            </div>
             <div style="padding: 8px;">
                 <label>Scale Regions:</label>
                 <button type="button" class="add-another-region">Add another region</button>
                 <button type="button" class="reset-regions" onclick="alert('TODO: implement!');">Reset</button>
                 <br/>
-                <div style="padding: 8px;" class="region-list">
+                <div style="padding: 8px;" class="region list">
                     <div>
                         <span>
-                            <button type="button" class="remove-region">X</button>
+                            <button type="button" class="remove region">X</button>
                         </span>
                         <select class="from-to-format">
                             <option>Notes</option>
@@ -77,7 +116,7 @@
                                     =>
                                     <input class="pitch-result" type="text" value="Re ½b" disabled="disabled"/>
                                     <input type="number" value="-0.25" min="-1" max="1" step="0.25" class="pitch-bend"/>
-                                    <button type="button" class="remove-pitched-note" onclick="alert('TODO: implement!');">X</button>
+                                    <button type="button" class="remove pitched-note" onclick="alert('TODO: implement!');">X</button>
                                 </span>
                             </span>
                         </span>
@@ -85,48 +124,51 @@
                 </div>
             </div>
             <div style="margin: 8px;">
-                        <label>Current MIDI File:</label>
-                        <button class="play-input" type="button" onclick="alert('Wait for soundfont data to load')">Play original</button>
-                        |
-                        <label>♩ = <span class="ticks-per-beat">?</span> ticks</label>
-                        |
-                        <label>
-                            <img width="12px" src="./img/metronome.png"/> =
-                            <span class="tempo-holder">120</span>
-                            <button class="discard-tempo-changes" style="display: none" type="button" onclick="alert('TODO: implement');">Discard tempo changes</button>
-                            <input class="tempo" style="display: none; width: 44px;" type="number" value="120" step="10" min="20" max="900"/>
-                            ♩ per minute
-                        </label>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Track</th>
-                                    <th>Name</th>
-                                    <th>Events</th>
-                                    <th>Oud</th>
-                                    <th>Tabla</th>
-                                    <th>Velocity</th>
-                                    <th>Origin.</th>
-                                    <th><img src="./img/eye.png" width="14px"></th>
-                                    <!--<th>🔊</th>-->
-                                    <th>Play</th>
-                                </tr>
-                            </thead>
-                            <tbody class="current-tracks">
-                                <tr>
-                                    <td class="holder track-number">None</td>
-                                    <td class="holder track-name"></td>
-                                    <td class="holder event-cnt"></td>
-                                    <td><input type="radio" name="isOudTrack" value=""/></td>
-                                    <td><input type="radio" name="isTablaTrack" value=""/></td>
-                                    <td><input style="text-align: right; width: 44px;" type="number" class="track-volume" value="0" min="1" max="100" step="10" style="width: 44px"/>%</td>
-                                    <td style="text-align: right;"><span class="holder original-volume">0</span>%</td>
-                                    <td style="user-select: none"><input type="checkbox" class="show-in-note-display" checked="checked"/></td>
-                                    <td><button type="button" class="play-track" onclick="alert('Load MIDI file first!');">Play</button></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <label>Current MIDI File:</label>
+                <button class="play-input" type="button" onclick="alert('Wait for soundfont data to load')">Play original</button>
+                |
+                <label>♩ = <span class="ticks-per-beat">?</span> ticks</label>
+                |
+                <label>
+                    <img width="12px" src="./img/metronome.png"/> =
+                    <span class="tempo-holder">120</span>
+                    <button class="discard-tempo-changes" style="display: none" type="button" onclick="alert('TODO: implement');">Discard tempo changes</button>
+                    <input class="tempo" style="display: none; width: 44px;" type="number" value="120" step="10" min="20" max="900"/>
+                    ♩ per minute
+                </label>
+                <br clear="all"/>
+                <div style="display: inline-block">
+                    <table class="tracks">
+                        <thead>
+                            <tr>
+                                <th>Track</th>
+                                <th>Name</th>
+                                <th>Events</th>
+                                <th>Oud</th>
+                                <th>Tabla</th>
+                                <th>Velocity</th>
+                                <th>Origin.</th>
+                                <th><img src="./img/eye.png" width="14px"></th>
+                                <!--<th>🔊</th>-->
+                                <th>Play</th>
+                            </tr>
+                        </thead>
+                        <tbody class="current-tracks">
+                            <tr>
+                                <td class="holder track-number">None</td>
+                                <td class="holder track-name"></td>
+                                <td class="holder event-cnt"></td>
+                                <td class="flag-cell"><input type="radio" name="isOudTrack" value=""/></td>
+                                <td class="flag-cell"><input type="radio" name="isTablaTrack" value=""/></td>
+                                <td><input style="text-align: right; width: 44px;" type="number" class="track-volume" value="0" min="1" max="100" step="10" style="width: 44px"/>%</td>
+                                <td style="text-align: right;"><span class="holder original-volume">0</span>%</td>
+                                <td class="flag-cell"><input type="checkbox" class="show-in-note-display" checked="checked"/></td>
+                                <td><button type="button" class="play-track" onclick="alert('Load MIDI file first!');">Play</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
             <label>Convert to Ranam format:</label>
             <button type="button" class="play-output" onclick="alert('Wait for soundfont data to load')">Play converted .mid</button>
             <button type="button" title="Upload General MIDI first!" class="convert-to-arabic">Save converted .mid</button>
@@ -138,14 +180,6 @@
             <div class="scroll">
                 <div class="note-list">
                     <div class="ivory"></div>
-                    <div class="ebony"></div>
-                    <div class="ivory"></div>
-
-                    <div class="ivory"></div> <!-- Do -->
-                    <div class="ebony"></div>
-                    <div class="ivory"></div>
-                    <div class="ebony"></div>
-                    <div class="ivory"></div>
                     <div class="ivory"></div>
                     <div class="ebony"></div>
                     <div class="ivory"></div>
@@ -154,7 +188,7 @@
                     <div class="ebony"></div>
                     <div class="ivory"></div>
 
-                    <div class="ivory"></div> <!-- Do -->
+                    <div class="ivory"></div> <!-- Mi -->
                     <div class="ebony"></div>
                     <div class="ivory"></div>
                     <div class="ebony"></div>
@@ -167,7 +201,7 @@
                     <div class="ebony"></div>
                     <div class="ivory"></div>
 
-                    <div class="ivory"></div>  <!-- Do -->
+                    <div class="ivory"></div>  <!-- Mi -->
                     <div class="ebony"></div>
                     <div class="ivory"></div>
                     <div class="ebony"></div>
@@ -180,7 +214,7 @@
                     <div class="ebony"></div>
                     <div class="ivory"></div>
 
-                    <div class="ivory"></div>  <!-- Do -->
+                    <div class="ivory"></div>  <!-- Mi -->
                     <div class="ebony"></div>
                     <div class="ivory"></div>
                     <div class="ebony"></div>
@@ -193,7 +227,7 @@
                     <div class="ebony"></div>
                     <div class="ivory"></div>
 
-                    <div class="ivory"></div>  <!-- Do -->
+                    <div class="ivory"></div>  <!-- Mi -->
                     <div class="ebony"></div>
                     <div class="ivory"></div>
                     <div class="ebony"></div>
@@ -206,7 +240,7 @@
                     <div class="ebony"></div>
                     <div class="ivory"></div>
 
-                    <div class="ivory"></div>  <!-- Do -->
+                    <div class="ivory"></div>  <!-- Mi -->
                     <div class="ebony"></div>
                     <div class="ivory"></div>
                     <div class="ebony"></div>
@@ -219,7 +253,7 @@
                     <div class="ebony"></div>
                     <div class="ivory"></div>
 
-                    <div class="ivory"></div>  <!-- Do -->
+                    <div class="ivory"></div>  <!-- Mi -->
                     <div class="ebony"></div>
                     <div class="ivory"></div>
                     <div class="ebony"></div>
