@@ -125,6 +125,12 @@
             }
         };
 
+        let saveXmlToDisc = function(buff)
+        {
+            let blob = new Blob([buff], {type: "xml/text"});
+            saveAs(blob, 'ranam_song.xml', true);
+        };
+
         let saveMidiToDisc = function(buff)
         {
             let blob = new Blob([buff], {type: "midi/binary"});
@@ -282,6 +288,24 @@
             };
         };
 
+        let prettifyXml = function(xmlDoc) {
+            let xsltDoc = new DOMParser().parseFromString([
+                // describes how we want to modify the XML - indent everything
+                '<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform">',
+                '  <xsl:output omit-xml-declaration="yes" indent="yes"/>',
+                '    <xsl:template match="node()|@*">',
+                '      <xsl:copy><xsl:apply-templates select="node()|@*"/></xsl:copy>',
+                '    </xsl:template>',
+                '</xsl:stylesheet>',
+            ].join('\n'), 'application/xml');
+
+            let xsltProcessor = new XSLTProcessor();
+            xsltProcessor.importStylesheet(xsltDoc);
+            let resultDoc = xsltProcessor.transformToDocument(xmlDoc);
+            let resultXml = new XMLSerializer().serializeToString(resultDoc);
+            return resultXml;
+        };
+
         let main = function () {
             gui.smfInput.value = null;
             gui.smfInput.onchange =
@@ -311,12 +335,20 @@
                 });
             };
             gui.convertBtn.onclick = () => {
-                let params = gui.collectParams(gui);
+                let params = gui.collectParams();
                 let buff = ToRanamFormat(currentSmf, params);
                 if (buff) {
                     console.log('Converted SMF', Ns.Libs.SMFreader(buff).tracks);
                     saveMidiToDisc(buff);
                 }
+            };
+            gui.saveXmlBtn.onclick = () => {
+                let smfParams = gui.collectParams();
+                let xmlDoc = gui.collectXmlParams(smfParams.sentences);
+                /** @debug */
+                console.log(xmlDoc);
+                let pretty = prettifyXml(xmlDoc);
+                saveXmlToDisc(pretty)
             };
             let getCurrentSmfAdapter = () => opt(currentSmf).map(SmfAdapter);
             gui.initSentence($$(':scope > *', gui.sentenceListCont)[0], getCurrentSmfAdapter());

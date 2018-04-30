@@ -14,29 +14,29 @@
     <form class="xml-data">
         <div style="text-align: center; font-weight: bold">
             <span>XML data</span>
-            <button type="button" onclick="alert('TODO: implement!');">Save .xml file</button>
+            <button class="save-xml" type="button" onclick="alert('TODO: implement!');">Save .xml file</button>
         </div>
-        <label>Name: <input type="text" value="Ya Dar"/></label>
-        <label>Hide Flags: <input type="text" value="None"/></label>
-        <label>Product ID: <input type="number" value="731266" min="0"/></label>
-        <label>MIDI File Path: <input type="text" value="/Songs/Ya Dar.mid"/></label>
+        <label>Name: <input name="name" type="text" value="Ya Dar"/></label>
+        <label>Hide Flags: <input name="hideFlags" type="text" value="None"/></label>
+        <label>Product ID: <input name="productId" type="number" value="731266" min="0"/></label>
+        <label>MIDI File Path: <input name="midiFilePath" type="text" value="/Songs/Ya Dar.mid"/></label>
         <div>
-            <label>Text Asset Name: <input type="text" value="Ya Dar.mid"/></label>
-            <label>Text Asset Hide Flags: <input type="text" value="NotEditable"/></label>
+            <label>Text Asset Name: <input name="textAssetName" type="text" value="Ya Dar.mid"/></label>
+            <label>Text Asset Hide Flags: <input name="textAssetHideFlags" type="text" value="NotEditable"/></label>
         </div>
         <div>
-            <label>Level: <select>
+            <label>Level: <select name="level">
                 <option>Easy</option>
                 <option>Medium</option>
                 <option>Hard</option>
             </select></label>
-            <label>Song Name Key: <input type="text" value="YaDar"/></label>
-            <label>Scale Name Key: <input type="text" value="Kord_La"/></label>
+            <label>Song Name Key: <input name="songNameKey" type="text" value="YaDar"/></label>
+            <label>Scale Name Key: <input name="scaleNameKey" type="text" value="Kord_La"/></label>
         </div>
         <div>
-            <label>Musician Name Key: <input type="text" value="RabehSagur"/></label>
-            <label>Is Locked: <input type="checkbox"/></label>
-            <label>Price: <input type="number" min="0.00" value="1" step="0.10"/></label>
+            <label>Musician Name Key: <input name="musicianNameKey" type="text" value="RabehSagur"/></label>
+            <label>Is Locked: <input name="isLocked" type="checkbox"/></label>
+            <label>Price: <input name="price" type="number" min="0.00" value="1" step="0.10"/></label>
         </div>
     </form>
     <form>
@@ -49,6 +49,7 @@
                     <span>
                         <span><button type="button" class="remove sentence" onclick="alert('TODO: implement!');">X</button></span>
                         <span>From: <input type="number" value="0" step="1" min="0" max="100" class="from"/></span>
+                        -
                         <span>To: <input type="number" value="0" step="1" min="0" max="100" class="to"/></span>
                     </span>
                 </span>
@@ -68,6 +69,7 @@
                             <option>Ticks</option>
                         </select>
                         <span title="Inclusive">From: <input type="number" value="0" step="1" min="0" max="100" class="from"/></span>
+                        -
                         <span title="Exclusive">To: <input type="number" value="0" step="1" min="0" max="100" class="to"/></span>
                         <span>
                             Scale:

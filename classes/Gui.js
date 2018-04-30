@@ -13,6 +13,7 @@ klesun.whenLoaded = () => (form) => {
     let {mkDom, promise, opt, range} = Tls();
     let {getScaleKeyNotes, getPitchResultNote} = ScaleMapping();
 
+    let xmlForm = $$('.xml-data', form)[0];
     let smfInput = $$('input[type="file"].midi-file', form)[0];
     let sf2Input = $$('input[type="file"].soundfont-file', form)[0];
     let smfFieldSet = $$('fieldset.needs-smf', form)[0];
@@ -34,6 +35,7 @@ klesun.whenLoaded = () => (form) => {
     let resetRegionsBtn = $$('button.reset-regions', form)[0];
 
     let convertBtn = $$('button.convert-to-arabic', form)[0];
+    let saveXmlBtn = $$('button.save-xml', form)[0];
     let noteDisplayCont = $$('.note-display-cont', form)[0];
     let noteHoverInfoHolder = $$('.note-hover-info', form)[0];
     let soundfontLoadingImg = $$('img.soundfont-loading', form)[0];
@@ -109,6 +111,48 @@ klesun.whenLoaded = () => (form) => {
                 $$('input.track-volume', t)[0].value /
                 $$('.holder.original-volume', t)[0].innerHTML,
         }),
+    };
+
+    let collectXmlParams = (sentences) => {
+        let xmlDoc = document.implementation.createDocument(null, "SongAsset");
+        let mkXml = (tagName, attrs) => {
+            let tag = xmlDoc.createElement(tagName);
+            for (let [k,v] of Object.entries(attrs)) {
+                if (k === 'children') {
+                    for (let subTag of v) {
+                        tag.appendChild(subTag);
+                    }
+                } else if (k === 'innerHTML') {
+                    tag.innerHTML = v;
+                } else {
+                    tag.setAttribute(k, v);
+                }
+            };
+            return tag;
+        };
+        return mkXml('SongAsset', {children: [
+            mkXml('name', {innerHTML: $$('input[name="name"]', xmlForm)[0].value}),
+            mkXml('hideFlags', {innerHTML: $$('input[name="hideFlags"]', xmlForm)[0].value}),
+            mkXml('productId', {innerHTML: $$('input[name="productId"]', xmlForm)[0].value}),
+            mkXml('midiFilePath', {innerHTML: $$('input[name="midiFilePath"]', xmlForm)[0].value}),
+            mkXml('textAsset', {children: [
+                mkXml('name', {innerHTML: $$('input[name="textAssetName"]', xmlForm)[0].value}),
+                mkXml('hideFlags', {innerHTML: $$('input[name="textAssetHideFlags"]', xmlForm)[0].value}),
+            ]}),
+            mkXml('songInfo', {children: [
+                mkXml('level', {innerHTML: $$('select[name="level"]', xmlForm)[0].value}),
+                mkXml('songNameKey', {innerHTML: $$('input[name="songNameKey"]', xmlForm)[0].value}),
+                mkXml('scaleNameKey', {innerHTML: $$('input[name="scaleNameKey"]', xmlForm)[0].value}),
+                mkXml('musicanNameKey', {innerHTML: $$('input[name="musicianNameKey"]', xmlForm)[0].value}),
+                mkXml('isLocked', {innerHTML: $$('input[name="isLocked"]', xmlForm)[0].checked ? 'true' : 'false'}),
+                mkXml('price', {innerHTML: $$('input[name="price"]', xmlForm)[0].value}),
+            ]}),
+            mkXml('sentences', {children: sentences.map(
+                sen => mkXml('SentenceRange', {
+                    from: sen.from, to: sen.to,
+                })
+            )}),
+        ]});
     };
 
     let switchWithStopBtn = (playBtn) => promise(done => {
@@ -380,6 +424,7 @@ klesun.whenLoaded = () => (form) => {
 
     return {
         collectParams: collectParams,
+        collectXmlParams: collectXmlParams,
         showMessages: showMessages,
         switchWithStopBtn: switchWithStopBtn,
         populateSmfGui: populateSmfGui,
@@ -407,6 +452,7 @@ klesun.whenLoaded = () => (form) => {
         resetRegionsBtn: resetRegionsBtn,
 
         convertBtn: convertBtn,
+        saveXmlBtn: saveXmlBtn,
         noteDisplayCont: noteDisplayCont,
         noteHoverInfoHolder: noteHoverInfoHolder,
         soundfontLoadingImg: soundfontLoadingImg,
