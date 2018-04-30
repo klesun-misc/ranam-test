@@ -1,13 +1,63 @@
+
+/* general */
+
 span {
     display: inline-block;
 }
+.message-container {
+    position: fixed;
+    width: 100%;
+    max-height: 200px;
+    overflow: auto;
+    top: 0;
+    left: 0;
+    background-color: rgba(55, 68, 118, 0.56);
+}
+.message-container > * {
+    margin: 3px;
+    padding: 2px 8px;
+    background-color: white;
+    border-radius: 10px;
+}
+.message-container .severity-error {
+    color: red;
+}
+.message-container .severity-warning {
+    color: #c55e00;
+}
+
+/* XML data */
+
+.xml-data {
+    background-color: #d3ecef;
+    padding: 2px;
+    border: solid blue 1px;
+    text-align: center;
+}
+.xml-data > div {
+    margin: 2px;
+}
+.xml-data label {
+    margin: 2px;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+input[type="file"].midi-file:invalid {
+    /*border: 4px solid red;*/
+    /*text-shadow: 1px 1px 2px pink;*/
+    box-shadow: 0 0 13px 4.5px rgba(81, 203, 238, 1);
+}
+fieldset.needs-smf:disabled {
+    filter: blur(2px);
+}
+
+/* region/sentence list */
+
 button.remove {
     color: darkred;
     font-weight: bold;
     font-size: 10px;
-}
-input.pitch-result {
-    width: 50px;
 }
 .list > * {
     background-color: #6094c1;
@@ -21,6 +71,27 @@ input.pitch-result {
     padding: 2px;
     margin: 3px;
 }
+
+
+.sentence-list-cont, .region-list-cont {
+    padding: 8px;
+}
+.sentence-list-cont > label, .region-list-cont > label {
+    font-weight: bold;
+}
+
+/* sentence-specific */
+
+.sentence-list-cont .list > * {
+    background-color: #c7b190;
+    border-color: #a87e7a;
+}
+.sentence-list-cont .list > * > span {
+    background-color: #ffea7f;
+}
+
+/* region-specific */
+
 .pitch-bend-list > * {
     background-color: #a6e8ab;
     border: solid #3685ab 1px;
@@ -30,26 +101,8 @@ input.pitch-result {
 input.pitch-bend {
     width: 60px;
 }
-img.soundfont-loading {
-    width: 100px;
-    height: auto;
-    mix-blend-mode: multiply;
-}
-fieldset.needs-smf:disabled {
-    filter: blur(2px);
-}
-input[type="file"].midi-file:invalid {
-    /*border: 4px solid red;*/
-    /*text-shadow: 1px 1px 2px pink;*/
-    box-shadow: 0 0 13px 4.5px rgba(81, 203, 238, 1);
-}
-.playback-config {
-    margin: 8px;
-    padding-left: 8px;
-    background-color: darkgrey;
-}
-.playing .playback-config {
-    box-shadow: 0 0 13px 4.5px rgb(196, 98, 42);
+input.pitch-result {
+    width: 50px;
 }
 .playing button.current-source {
     display: none;
@@ -57,6 +110,33 @@ input[type="file"].midi-file:invalid {
 .playing button.destroy-when-music-stops {
     box-shadow: 0 0 13px 4.5px rgb(189, 98, 195);
 }
+
+/* track table */
+
+table.tracks {
+    margin: 12px;
+    border-collapse: collapse;
+}
+.tracks td, th {
+    border: 1px solid #38abcd;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+table.tracks > thead { background-color: #baffaf; }
+table.tracks > tbody { background-color: #f0ffff; }
+table.tracks > tbody > tr:not(.real) { background-color: #e8e8e8; }
+table.tracks .holder.track-number { text-align: right; }
+table.tracks .flag-cell {
+    text-align: center;
+    user-select: none;
+}
+table.tracks .flag-cell:active {
+    background-color: rgba(193, 255, 223, 0.8);
+}
+table.tracks .holder.event-cnt { text-align: right; }
+
+/** note display follows */
+
 .note-list > .ebony {
     background-color: #474747c2;
 }
@@ -104,64 +184,23 @@ input[type="file"].midi-file:invalid {
     background-color: red;
 }
 
-.message-container {
-    position: fixed;
-    width: 100%;
-    max-height: 200px;
-    overflow: auto;
-    top: 0;
-    left: 0;
-    background-color: rgba(55, 68, 118, 0.56);
+/* soundfont info */
+
+img.soundfont-loading {
+    width: 100px;
+    height: auto;
+    mix-blend-mode: multiply;
 }
-.message-container > * {
-    margin: 3px;
-    padding: 2px 8px;
-    background-color: white;
-    border-radius: 10px;
+.playback-config {
+    margin: 8px;
+    padding-left: 8px;
+    background-color: darkgrey;
 }
-.message-container .severity-error {
-    color: red;
-}
-.message-container .severity-warning {
-    color: #c55e00;
+.playing .playback-config {
+    box-shadow: 0 0 13px 4.5px rgb(196, 98, 42);
 }
 
-.xml-data {
-    background-color: #d3ecef;
-    padding: 2px;
-    border: solid blue 1px;
-    text-align: center;
-}
-.xml-data > div {
-    margin: 2px;
-}
-.xml-data label {
-    margin: 2px;
-    display: inline-block;
-    white-space: nowrap;
-}
-
-table.tracks {
-    margin: 12px;
-    border-collapse: collapse;
-}
-.tracks td, th {
-    border: 1px solid #38abcd;
-    padding-left: 4px;
-    padding-right: 4px;
-}
-table.tracks > thead { background-color: #baffaf; }
-table.tracks > tbody { background-color: #f0ffff; }
-table.tracks > tbody > tr:not(.real) { background-color: #e8e8e8; }
-table.tracks .holder.track-number { text-align: right; }
-table.tracks .flag-cell {
-    text-align: center;
-    user-select: none;
-}
-table.tracks .flag-cell:active {
-    background-color: rgba(193, 255, 223, 0.8);
-}
-table.tracks .holder.event-cnt { text-align: right; }
+/* channel colors */
 
 #midi-file-params.hide-notes-channel-0  .note-list > * > *[data-track="0"]  { display: none; }
 #midi-file-params.hide-notes-channel-1  .note-list > * > *[data-track="1"]  { display: none; }

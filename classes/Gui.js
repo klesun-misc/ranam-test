@@ -22,11 +22,17 @@ klesun.whenLoaded = () => (form) => {
     let tempoInput = $$('input.tempo', form)[0];
     let trackList = $$('tbody.current-tracks', form)[0];
     let trackTrRef = $$('.current-tracks tr')[0].cloneNode(true);
+
+    let sentenceListCont = $$('.sentence.list', form)[0];
+    let sentenceRef = $$('.sentence.list > *', form)[0].cloneNode(true);
+    let addAnotherSentenceBtn = $$('button.add-another-sentence', form)[0];
+
     let regionListCont = $$('.region.list', form)[0];
     let regionRef = $$('.region.list > *', form)[0].cloneNode(true);
     let pitchBendRef = $$('.pitch-bend-list > *', form)[0].cloneNode(true);
     let addAnotherRegionBtn = $$('button.add-another-region', form)[0];
     let resetRegionsBtn = $$('button.reset-regions', form)[0];
+
     let convertBtn = $$('button.convert-to-arabic', form)[0];
     let noteDisplayCont = $$('.note-display-cont', form)[0];
     let noteHoverInfoHolder = $$('.note-hover-info', form)[0];
@@ -87,9 +93,15 @@ klesun.whenLoaded = () => (form) => {
             }),
     };
 
+    let collectSentence = div => 1 && {
+        from: $$('input.from', div)[0].value,
+        to: $$('input.to', div)[0].value,
+    };
+
     let collectParams = () => 1 && {
         tempo: tempoInput.style.display !== 'none' ? tempoInput.value : null,
         scaleRegions: $$(':scope > *', regionListCont).map(collectRegion),
+        sentences: $$(':scope > *', sentenceListCont).map(collectSentence),
         oudTrackNum: $$('[name="isOudTrack"]:checked', trackList).map(r => +r.value)[0],
         tablaTrackNum: $$('[name="isTablaTrack"]:checked', trackList).map(r => +r.value || null)[0],
         configTracks: $$(':scope > tr.real', trackList).map((t,i) => 1 && {
@@ -140,6 +152,22 @@ klesun.whenLoaded = () => (form) => {
         };
         formatSelect.onchange = onchange;
         onchange();
+    };
+
+    let updateSentenceTimeRanges = function (div, smfAdapter) {
+        let formData = collectParams();
+        let totalNotes = opt(smfAdapter.tracks[formData.oudTrackNum]).map(t => t.totalNotes).def(100);
+
+        let max = totalNotes;
+        let regionData = collectSentence(div);
+        let fromProg = regionData.from / $$('input.from', div)[0].getAttribute('max');
+        let toProg = regionData.to / $$('input.to', div)[0].getAttribute('max');
+
+        $$('input.from', div)[0].setAttribute('max', totalNotes);
+        $$('input.from', div)[0].value = Math.round(max * fromProg);
+
+        $$('input.to', div)[0].setAttribute('max', totalNotes);
+        $$('input.to', div)[0].value = Math.round(max * toProg) || max;
     };
 
     let addPitchBendNote = function (pitchBendList) {
@@ -198,7 +226,6 @@ klesun.whenLoaded = () => (form) => {
         $$('button.remove.region', div)[0].onclick = () => {
             let regions = div.parentNode.children;
             if (regions.length > 1) {
-                console.log(regions);
                 div.remove();
             } else {
                 alert('There should be at least 1 region');
@@ -210,6 +237,20 @@ klesun.whenLoaded = () => (form) => {
         onchange();
     };
 
+    let initSentence = function (div, currentSmfAdapter) {
+        currentSmfAdapter.get = smfAdapter =>
+            updateSentenceTimeRanges(div, smfAdapter);
+
+        $$('button.remove.sentence', div)[0].onclick = () => {
+            let sentences = div.parentNode.children;
+            if (sentences.length > 1) {
+                div.remove();
+            } else {
+                alert('There should be at least 1 sentence');
+            }
+        };
+    };
+
     let populateSmfGui = function(smfAdapter) {
         trackList.innerHTML = '';
         smfFieldSet.removeAttribute('disabled');
@@ -218,8 +259,12 @@ klesun.whenLoaded = () => (form) => {
         let playTrack = (trackNum, isOud, isTabla, playBtn) =>
             showMessages({errors: ['Action should be assigned outside']});
 
-        let updateAllScaleRanges = () => $$(':scope > div', regionListCont)
-            .forEach(div => updateScaleTimeRanges(div, smfAdapter));
+        let updateAllRanges = () => {
+            $$(':scope > *', regionListCont)
+                .forEach(div => updateScaleTimeRanges(div, smfAdapter));
+            $$(':scope > *', sentenceListCont)
+                .forEach(div => updateSentenceTimeRanges(div, smfAdapter));
+        };
 
         let nameToLastTrackNum = {};
         let onlyOne = (trackNum, tr, name) => {
@@ -249,7 +294,7 @@ klesun.whenLoaded = () => (form) => {
                     }
                 }
             }
-            updateAllScaleRanges();
+            updateAllRanges();
             nameToLastTrackNum[name] = trackNum;
         };
         let lastVisionFlagVal = true;
@@ -302,7 +347,7 @@ klesun.whenLoaded = () => (form) => {
         let noneTr = trackTrRef.cloneNode(true);
         $$('.holder.track-number', noneTr)[0].innerHTML = 'None';
         $$('input[name="isTablaTrack"]', noneTr)[0].checked = true;
-        $$('input[name="isTablaTrack"]', noneTr)[0].onchange = updateAllScaleRanges;
+        $$('input[name="isTablaTrack"]', noneTr)[0].onchange = updateAllRanges;
         $$('input[name="isOudTrack"]', noneTr)[0].remove();
         $$('button.play-track', noneTr)[0].remove();
         $$('.show-in-note-display', noneTr)[0].remove();
@@ -325,7 +370,7 @@ klesun.whenLoaded = () => (form) => {
             discardTempoChangesBtn.style.display = 'none';
             tempoInput.style.display = 'inline';
         }
-        updateAllScaleRanges();
+        updateAllRanges();
         return {
             set onPlayTrackClick(cb) {
                 playTrack = cb;
@@ -337,7 +382,6 @@ klesun.whenLoaded = () => (form) => {
         collectParams: collectParams,
         showMessages: showMessages,
         switchWithStopBtn: switchWithStopBtn,
-        initScale: initScale,
         populateSmfGui: populateSmfGui,
         // I desire to replace them all with value getters/setters one day
         smfInput: smfInput,
@@ -349,11 +393,19 @@ klesun.whenLoaded = () => (form) => {
         tempoInput: tempoInput,
         trackList: trackList,
         trackTrRef: trackTrRef,
+
+        initSentence: initSentence,
+        sentenceListCont: sentenceListCont,
+        sentenceRef: sentenceRef,
+        addAnotherSentenceBtn: addAnotherSentenceBtn,
+
+        initScale: initScale,
         regionListCont: regionListCont,
         regionRef: regionRef,
         pitchBendRef: pitchBendRef,
         addAnotherRegionBtn: addAnotherRegionBtn,
         resetRegionsBtn: resetRegionsBtn,
+
         convertBtn: convertBtn,
         noteDisplayCont: noteDisplayCont,
         noteHoverInfoHolder: noteHoverInfoHolder,

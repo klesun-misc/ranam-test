@@ -319,6 +319,12 @@
                 }
             };
             let getCurrentSmfAdapter = () => opt(currentSmf).map(SmfAdapter);
+            gui.initSentence($$(':scope > *', gui.sentenceListCont)[0], getCurrentSmfAdapter());
+            gui.addAnotherSentenceBtn.onclick = () => {
+                let cloned = gui.sentenceRef.cloneNode(true);
+                gui.sentenceListCont.appendChild(cloned);
+                gui.initSentence(cloned, getCurrentSmfAdapter());
+            };
             gui.initScale($$(':scope > *', gui.regionListCont)[0], getCurrentSmfAdapter());
             gui.addAnotherRegionBtn.onclick = () => {
                 let cloned = gui.regionRef.cloneNode(true);
