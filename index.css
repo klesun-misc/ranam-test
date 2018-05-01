@@ -195,6 +195,21 @@ table.tracks .holder.event-cnt { text-align: right; }
 .note-list > * > div:hover {
     filter: saturate(3.5);
 }
+.note-list > * > div.selected-note {
+    filter: brightness(1.4);
+}
+.note-info-panel {
+    padding: 2px;
+    background-color: #d0fdff;
+    border-top: solid #0094c1 2px;
+}
+.note-info-panel span {
+    min-width: 20px;
+}
+.note-info-panel label {
+    min-width: 20px;
+    margin-right: 8px;
+}
 .note-display-cont {
     position: relative;
     border: solid #0a25aa 2px;
@@ -293,6 +308,7 @@ body {
     --channel-color-15: rgb(255, 64, 0);
 }
 
+.colorize-channel-bg { color: white; }
 .colorize-channel-bg[data-channel= "0"] { background-color: var(--channel-color-0); }
 .colorize-channel-bg[data-channel= "1"] { background-color: var(--channel-color-1); }
 .colorize-channel-bg[data-channel= "2"] { background-color: var(--channel-color-2); }

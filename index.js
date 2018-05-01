@@ -276,9 +276,6 @@
                 });
                 setTimeout(() => synth.stopAll(), 500);
             };
-            noteDisplay.onNoteOver = (note) => gui.noteHoverInfoHolder.innerHTML =
-                Object.entries(note).map(([k, v]) => k + ': ' + v).join(' | ');
-            noteDisplay.onNoteOut = (note) => gui.noteHoverInfoHolder.innerHTML = '...';
         };
 
         let initPlaybackBtns = function() {

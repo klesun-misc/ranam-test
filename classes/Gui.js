@@ -38,7 +38,6 @@ klesun.whenLoaded = () => (form) => {
     let convertBtn = $$('button.convert-to-arabic', form)[0];
     let saveXmlBtn = $$('button.save-xml', form)[0];
     let noteDisplayCont = $$('.note-display-cont', form)[0];
-    let noteHoverInfoHolder = $$('.note-hover-info', form)[0];
     let soundfontLoadingImg = $$('img.soundfont-loading', form)[0];
     let playInputBtn = $$('button.play-input', form)[0];
     let playOutputBtn = $$('button.play-output', form)[0];
@@ -450,7 +449,6 @@ klesun.whenLoaded = () => (form) => {
         convertBtn: convertBtn,
         saveXmlBtn: saveXmlBtn,
         noteDisplayCont: noteDisplayCont,
-        noteHoverInfoHolder: noteHoverInfoHolder,
         soundfontLoadingImg: soundfontLoadingImg,
         playInputBtn: playInputBtn,
         playOutputBtn: playOutputBtn,

@@ -70,40 +70,60 @@ klesun.whenLoaded = () => {
         let lastTick = notes.reduce((max, n) => Math.max(max, n.time + n.dura), 0);
         let noteList = $$('.note-list', container)[0];
         let scroll = $$('.scroll', container)[0];
+        let rows = $$(':scope > *', noteList);
+        let noteInfoPanel = $$('.note-info-panel', container)[0];
+
+        let setCurrentNote = (dom, note) => {
+            $$('.selected-note', container).forEach(dom => dom.classList.remove('selected-note'));
+            dom.classList.add('selected-note');
+            $$('.tone', noteInfoPanel)[0].innerHTML = note.tone;
+            $$('.chan', noteInfoPanel)[0].innerHTML = note.chan;
+            $$('.chan', noteInfoPanel)[0].setAttribute('data-channel', note.chan);
+            $$('.track', noteInfoPanel)[0].innerHTML = note.track;
+            $$('.index', noteInfoPanel)[0].innerHTML = note.index;
+            $$('.time', noteInfoPanel)[0].value = note.time;
+            $$('.dura', noteInfoPanel)[0].value = note.dura;
+            $$('.velo', noteInfoPanel)[0].value = note.velo;
+        };
+
+        let addNoteRect = (note) => {
+            let {tone, dura, time, chan, velo, track} = note;
+            let yOffset = 127 - tone;
+            let row = rows[yOffset];
+            let rect = mkDom('div', {
+                classList: ['colorize-channel-bg'],
+                'data-channel': chan,
+                'data-track': track,
+                style: {
+                    position: 'absolute',
+                    top: 0,
+                    left: toPixels(time) + POINTER_OFFSET,
+                    width: toPixels(dura),
+                    height: '100%',
+                    margin: '0',
+                },
+                onclick: () => {
+                    setCurrentNote(rect, note);
+                    onNoteClick(note);
+                },
+                onmouseover: () => onNoteOver(note),
+                onmouseout: () => onNoteOut(note),
+            });
+            row.appendChild(rect);
+            return rect;
+        };
 
         let putNotes = function() {
             let maxX = 0;
-            let rows = $$(':scope > *', noteList);
             rows.forEach(r => r.innerHTML = '');
             for (let note of notes) {
-                let {tone, dura, time, chan, velo, track} = note;
-                let yOffset = 108 - tone;
-                if (yOffset > 0 && yOffset < rows.length) {
-                    let row = rows[yOffset];
-                    row.appendChild(mkDom('div', {
-                        classList: ['colorize-channel-bg'],
-                        'data-channel': chan,
-                        'data-track': track,
-                        style: {
-                            position: 'absolute',
-                            top: 0,
-                            left: toPixels(time) + POINTER_OFFSET,
-                            width: toPixels(dura),
-                            height: '100%',
-                            margin: '0',
-                        },
-                        onclick: () => onNoteClick(note),
-                        onmouseover: () => onNoteOver(note),
-                        onmouseout: () => onNoteOut(note),
-                    }));
-                    let endX = POINTER_OFFSET + toPixels(time) + toPixels(dura);
-                    maxX = Math.max(maxX, endX);
-                } else {
-                    console.debug('note outside the rows ' + yOffset, note);
-                }
+                let {dura, time} = note;
+                addNoteRect(note);
+                let endX = POINTER_OFFSET + toPixels(time) + toPixels(dura);
+                maxX = Math.max(maxX, endX);
             }
             noteList.style.width = maxX + scroll.clientWidth - POINTER_OFFSET || '100%';
-            scroll.scrollTop = (scroll.scrollHeight - scroll.clientHeight) * 3 / 4;
+            scroll.scrollTop = (scroll.scrollHeight - scroll.clientHeight) * 2 / 3;
             scroll.scrollLeft = 0;
         };
 
@@ -170,6 +190,19 @@ klesun.whenLoaded = () => {
         };
 
         putNotes();
+        noteList.onmouseout = (e) => {
+            $$('.mouse-ticks-holder', noteInfoPanel)[0].innerHTML = '';
+            $$('.mouse-semitone-holder', noteInfoPanel)[0].innerHTML = '';
+        };
+        noteList.onmousemove = (e) => {
+            let bounds = noteList.getBoundingClientRect();
+            let x = event.clientX - bounds.left;
+            let y = event.clientY - bounds.top;
+            let ticks = Math.round(toTicks(x - POINTER_OFFSET));
+            let semitone = 127 - Math.round(y / rows[0].offsetHeight);
+            $$('.mouse-ticks-holder', noteInfoPanel)[0].innerHTML = ticks;
+            $$('.mouse-semitone-holder', noteInfoPanel)[0].innerHTML = semitone;
+        };
 
         return {
             set onNoteClick(cb) { onNoteClick = cb; },
