@@ -57,12 +57,13 @@ klesun.whenLoaded = () => {
         return {notes, otherEvents};
     };
 
-    let POINTER_OFFSET = 20;
-
-    let toPixels = ticks => ticks / 10;
-    let toTicks = pixels => Math.max(0, (pixels) * 10);
+    let SCALE = 50; /* should make it configurable */
+    let POINTER_OFFSET = 50;
 
     return (container, smf) => {
+
+        let toPixels = ticks => ticks / smf.ticksPerBeat * SCALE;
+        let toTicks = pixels => Math.max(0, pixels * smf.ticksPerBeat / SCALE);
 
         smf = JSON.parse(JSON.stringify(smf));
         let {notes, otherEvents} = collectNotes(smf);

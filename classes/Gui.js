@@ -19,6 +19,7 @@ klesun.whenLoaded = () => (form) => {
     let smfFieldSet = $$('fieldset.needs-smf', form)[0];
     let ticksPerBeatHolder = $$('.ticks-per-beat', form)[0];
     let tempoHolder = $$('.tempo-holder', form)[0];
+    let timeSigHolder = $$('.time-sig-holder', form)[0];
     let discardTempoChangesBtn = $$('button.discard-tempo-changes', form)[0];
     let tempoInput = $$('input.tempo', form)[0];
     let trackList = $$('tbody.current-tracks', form)[0];
@@ -398,10 +399,12 @@ klesun.whenLoaded = () => (form) => {
         trackList.appendChild(noneTr);
         ticksPerBeatHolder.innerHTML = smfAdapter.ticksPerBeat;
 
+        let ticksToTimeSig = smfAdapter.ticksToTimeSig;
+        timeSigHolder.innerHTML = Object.values(ticksToTimeSig)
+            .map(sig => sig.num + '/' + sig.den).join(', ').slice(0, 20);
         let ticksToTempo = smfAdapter.ticksToTempo;
         let tempos = Object.values(ticksToTempo);
-        let tempoStr = tempos.map(t => Math.round(t)).join(', ').slice(0, 20) || '120';
-        tempoHolder.innerHTML = tempoStr;
+        tempoHolder.innerHTML = tempos.map(t => Math.round(t)).join(', ').slice(0, 20) || '120';
         tempoInput.value = tempos.reduce((sum, t) => sum + t, 0) / tempos.length;
         if (new Set(tempos).size > 1) {
             // hide tempo input, show discard button
@@ -431,13 +434,7 @@ klesun.whenLoaded = () => (form) => {
         // I desire to replace them all with value getters/setters one day
         smfInput: smfInput,
         sf2Input: sf2Input,
-        smfFieldSet: smfFieldSet,
-        ticksPerBeatHolder: ticksPerBeatHolder,
-        tempoHolder: tempoHolder,
-        discardTempoChangesBtn: discardTempoChangesBtn,
         tempoInput: tempoInput,
-        trackList: trackList,
-        trackTrRef: trackTrRef,
 
         initSentence: initSentence,
         sentenceListCont: sentenceListCont,
@@ -447,7 +444,6 @@ klesun.whenLoaded = () => (form) => {
         initScale: initScale,
         regionListCont: regionListCont,
         regionRef: regionRef,
-        pitchBendRef: pitchBendRef,
         addAnotherRegionBtn: addAnotherRegionBtn,
         resetRegionsBtn: resetRegionsBtn,
 

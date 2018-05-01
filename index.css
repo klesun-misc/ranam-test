@@ -144,6 +144,10 @@ input.pitch-result {
     box-shadow: 0 0 13px 4.5px rgb(189, 98, 195);
 }
 
+.time-sig-holder {
+    font-weight: bold;
+}
+
 /* track table */
 
 table.tracks {
@@ -204,15 +208,33 @@ table.tracks .holder.event-cnt { text-align: right; }
     resize: vertical;
     position: relative;
     /* not sure it actually does anything... */
-    scroll-behavior: auto;
+    /*scroll-behavior: auto;*/
 
     /* does not seem do decrease CPU usage sadly */
     /*will-change: scroll-position;*/
+
+    --quarter-width: 50px;
+    /** time signature lines */
+    background:
+        /* eight note line */
+        repeating-linear-gradient(
+            90deg,
+            #00000000,
+            #00000000 calc(var(--quarter-width) / 2 - 1px),
+            #aaaaaa calc(var(--quarter-width) / 2)
+        ) local,
+        /* quarter note line */
+        repeating-linear-gradient(
+            90deg,
+            #00000000,
+            #00000000 calc(var(--quarter-width) - 1px),
+            #000000 var(--quarter-width)
+        ) local;
 }
 .time-pointer {
     position: absolute;
     width: 4px;
-    left: 20px;
+    left: 50px;
     height: 100%;
     background-color: red;
 }

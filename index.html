@@ -4,6 +4,7 @@
     <script src="./lib/require.js"></script>
     <script src="./lib/KlesunRequires.js"></script>
     <link type="text/css" rel="stylesheet" href="./index.css"/>
+    <title>Ranam MIDI Editor</title>
 </head>
 <body>
 
@@ -136,6 +137,8 @@
                     <input class="tempo" style="display: none; width: 44px;" type="number" value="120" step="10" min="20" max="900"/>
                     ♩ per minute
                 </label>
+                |
+                <span class="time-sig-holder">0/4</span>
                 <br clear="all"/>
                 <div style="display: inline-block">
                     <table class="tracks">
@@ -160,7 +163,7 @@
                                 <td class="holder event-cnt"></td>
                                 <td class="flag-cell"><input type="radio" name="isOudTrack" value=""/></td>
                                 <td class="flag-cell"><input type="radio" name="isTablaTrack" value=""/></td>
-                                <td><input style="text-align: right; width: 44px;" type="number" class="track-volume" value="0" min="1" max="100" step="10" style="width: 44px"/>%</td>
+                                <td><input style="text-align: right; width: 44px;" type="number" class="track-volume" value="0" min="1" max="100" step="3"/>%</td>
                                 <td style="text-align: right;"><span class="holder original-volume">0</span>%</td>
                                 <td class="flag-cell"><input type="checkbox" class="show-in-note-display" checked="checked"/></td>
                                 <td><button type="button" class="play-track" onclick="alert('Load MIDI file first!');">Play</button></td>

@@ -52,6 +52,21 @@
             return events.filter(isNoteOn).length;
         };
 
+        let collectTicksToTimeSig = function(smf) {
+            let ticksToTimeSig = {};
+            for (let track of smf.tracks) {
+                let ticks = 0;
+                for (let event of track.events) {
+                    ticks += event.delta;
+                    if (event.type === 'meta' && event.metaType === 88) { // time signature
+                        let [num, denLog, midClocksPerMetrClick, thirtySecondsPer24Clocks] = event.metaData;
+                        ticksToTimeSig[ticks] = {num: num, den: Math.pow(2, denLog)};
+                    }
+                }
+            }
+            return ticksToTimeSig;
+        };
+
         let collectTicksToTempo = function(smf) {
             let ticksToTempo = {};
             for (let track of smf.tracks) {
@@ -227,6 +242,7 @@
             return {
                 ticksPerBeat: smf.ticksPerBeat,
                 ticksToTempo: collectTicksToTempo(smf),
+                ticksToTimeSig: collectTicksToTimeSig(smf),
                 tracks: smf.tracks.map(t => {
                     return {
                         trackName: t.trackName,
