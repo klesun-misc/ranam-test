@@ -65,13 +65,20 @@ button.remove {
     margin-bottom: 6px;
     padding-left: 2px;
 }
-.list > * > span {
-    background-color: #d3ecef;
-    border: solid white 2px;
-    padding: 2px;
-    margin: 3px;
+
+.no-pitch-bend-msg:empty, .pitch-bend-list:empty {
+    display: none;
 }
 
+.sentence.list > * > span, .region-main-part > * {
+    background-color: #d3ecef;
+    border: solid white 2px;
+    padding: 0px;
+    margin: 1px;
+}
+.sentence.list, .pitch-bend-list {
+    display: inline;
+}
 
 .sentence-list-cont, .region-list-cont {
     padding: 8px;
@@ -82,9 +89,26 @@ button.remove {
 
 /* sentence-specific */
 
+.sentence-list-cont {
+    --cell-width: 276px;
+    padding-left: 2px;
+    border: solid white 2px;
+}
+
 .sentence-list-cont .list > * {
     background-color: #c7b190;
     border-color: #a87e7a;
+    margin-left: 8px;
+    /* - border and padding */
+    min-width: calc(var(--cell-width) - 6px);
+    text-align: center;
+}
+
+.sentence-list-cont .button-holder {
+    min-width: var(--cell-width);
+    text-align: right;
+    font-weight: bold;
+    margin-left: 8px;
 }
 .sentence-list-cont .list > * > span {
     background-color: #ffea7f;
@@ -92,11 +116,20 @@ button.remove {
 
 /* region-specific */
 
+.region-list-cont {
+    --pitch-bend-width: 230px;
+}
+.region-main-part {
+    min-width: calc(var(--pitch-bend-width) * 3);
+    text-align: center;
+}
 .pitch-bend-list > * {
     background-color: #a6e8ab;
     border: solid #3685ab 1px;
-    padding: 2px;
-    margin-left: 4px;
+    padding: 1px;
+    margin: 2px 4px;
+    /* - padding - border - margin */
+    min-width: calc(var(--pitch-bend-width) - 2px - 2px - 8px);
 }
 input.pitch-bend {
     width: 60px;
