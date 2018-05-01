@@ -8,7 +8,7 @@ klesun.requires('./Tls.js').then = (Tls) =>
 klesun.requires('./MidiUtil.js').then = (MidiUtil ) =>
 klesun.whenLoaded = () => {
 
-    let {range, mkDom, opt, promise} = Tls();
+    let {range, mkDom, opt, promise, deepCopy} = Tls();
     let {ticksToMillis, isNoteOn, isNoteOff} = MidiUtil();
     let $$ = (s, root) => [...(root || document).querySelectorAll(s)];
 
@@ -60,6 +60,37 @@ klesun.whenLoaded = () => {
     let SCALE = 50; /* should make it configurable */
     let POINTER_OFFSET = 50;
 
+    let noteToEvents = (n) => [
+        {
+            delta: null,
+            time: n.time,
+            type: "MIDI",
+            midiEventType: 9, // note on
+            midiChannel: n.chan,
+            parameter1: n.tone,
+            parameter2: n.velo,
+        },
+        {
+            delta: null,
+            time: n.time + n.dura,
+            type: "MIDI",
+            midiEventType: 8, // note off
+            midiChannel: n.chan,
+            parameter1: n.tone,
+            parameter2: 0,
+        },
+    ];
+
+    let sortAndAddDelta = (absEvents) => {
+        absEvents.sort((a,b) => a.time - b.time);
+        let time = 0;
+        for (let absEvent of absEvents) {
+            absEvent.delta = absEvent.time - time;
+            time = absEvent.time;
+        }
+        return absEvents;
+    };
+
     return (container, smf) => {
 
         let toPixels = ticks => ticks / smf.ticksPerBeat * SCALE;
@@ -68,22 +99,78 @@ klesun.whenLoaded = () => {
         smf = JSON.parse(JSON.stringify(smf));
         let {notes, otherEvents} = collectNotes(smf);
         let lastTick = notes.reduce((max, n) => Math.max(max, n.time + n.dura), 0);
+        let wasChanged = false;
         let noteList = $$('.note-list', container)[0];
         let scroll = $$('.scroll', container)[0];
         let rows = $$(':scope > *', noteList);
         let noteInfoPanel = $$('.note-info-panel', container)[0];
 
+        let getEditorSmf = () => {
+            // like normal events, but with absolute
+            // time - will be replaced with delta later
+            let trackToEvents = [];
+
+            $$('[data-note]', noteList)
+                .map(dom => JSON.parse(dom.getAttribute('data-note')))
+                .forEach(n => {
+                    trackToEvents[n.track] = trackToEvents[n.track] || [];
+                    trackToEvents[n.track].push(...noteToEvents(n));
+                });
+            otherEvents.forEach(r => {
+                trackToEvents[r.track] = trackToEvents[r.track] || [];
+                let event = r.event;
+                event.time = r.time;
+                trackToEvents[r.track].push(event);
+            });
+
+            /** @debug */
+            console.debug('track to abs events', trackToEvents);
+
+            let editorSmf = {
+                format: smf.format,
+                numTracks: smf.numTracks,
+                ticksPerBeat: smf.ticksPerBeat,
+                tracks: trackToEvents.map((events,i) => 1 && {
+                    byteLength: null,
+                    events: sortAndAddDelta(events),
+                }),
+            };
+            console.debug('editorSmf', editorSmf);
+            return editorSmf;
+        };
+
         let setCurrentNote = (dom, note) => {
+            note = deepCopy(note);
             $$('.selected-note', container).forEach(dom => dom.classList.remove('selected-note'));
             dom.classList.add('selected-note');
-            $$('.tone', noteInfoPanel)[0].innerHTML = note.tone;
             $$('.chan', noteInfoPanel)[0].innerHTML = note.chan;
             $$('.chan', noteInfoPanel)[0].setAttribute('data-channel', note.chan);
             $$('.track', noteInfoPanel)[0].innerHTML = note.track;
             $$('.index', noteInfoPanel)[0].innerHTML = note.index;
-            $$('.time', noteInfoPanel)[0].value = note.time;
-            $$('.dura', noteInfoPanel)[0].value = note.dura;
-            $$('.velo', noteInfoPanel)[0].value = note.velo;
+            let toneInp = $$('.tone', noteInfoPanel)[0];
+            let timeInp = $$('.time', noteInfoPanel)[0];
+            let duraInp = $$('.dura', noteInfoPanel)[0];
+            let veloInp = $$('.velo', noteInfoPanel)[0];
+            timeInp.setAttribute('step', smf.ticksPerBeat / 8);
+            duraInp.setAttribute('step', smf.ticksPerBeat / 8);
+            toneInp.value = note.tone;
+            timeInp.value = note.time;
+            duraInp.value = note.dura;
+            veloInp.value = note.velo;
+            let onInput = () => {
+                wasChanged = true;
+                note.tone = toneInp.value;
+                note.time = timeInp.value;
+                note.dura = duraInp.value;
+                note.velo = veloInp.value;
+                dom.remove();
+                let rect = addNoteRect(note);
+                setCurrentNote(rect, note);
+            };
+            toneInp.oninput = onInput;
+            timeInp.oninput = onInput;
+            duraInp.oninput = onInput;
+            veloInp.oninput = onInput;
         };
 
         let addNoteRect = (note) => {
@@ -94,6 +181,7 @@ klesun.whenLoaded = () => {
                 classList: ['colorize-channel-bg'],
                 'data-channel': chan,
                 'data-track': track,
+                'data-note': JSON.stringify(note),
                 style: {
                     position: 'absolute',
                     top: 0,
@@ -209,6 +297,7 @@ klesun.whenLoaded = () => {
             set onNoteOver(cb) { onNoteOver = cb; },
             set onNoteOut(cb) { onNoteOut = cb; },
             animatePointer: (ticksToTempo, ticksPerBeat) => animatePointer(ticksToTempo, ticksPerBeat),
+            getEditorSmf: () => wasChanged ? getEditorSmf() : smf,
         };
     };
 };

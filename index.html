@@ -323,13 +323,13 @@
             </div>
             <div class="note-info-panel">
                 <span>
-                    <label>Semitone: <span class="tone"></span></label>
                     <label>Channel: <span class="chan colorize-channel-bg"></span></label>
                     <label>Track: <span class="track"></span></label>
                     <label>Index: <span class="index"></span></label>
-                    <label>Start Ticks: <input disabled="disabled" class="time" type="number" min="0" style="width: 60px;"/></label>
-                    <label>Duration: <input disabled="disabled" class="dura" type="number" min="0" style="width: 60px;"/></label>
-                    <label>Velocity: <input disabled="disabled" class="velo" type="number" min="1" max="128"/></label>
+                    <label>Semitone: <input class="tone" type="number" min="0" max="127"/></label>
+                    <label>Start Ticks: <input class="time" type="number" min="0" style="width: 60px;"/></label>
+                    <label>Duration: <input class="dura" type="number" min="0" style="width: 60px;"/></label>
+                    <label>Velocity: <input class="velo" type="number" min="1" max="127" step="3"/></label>
                 </span>
                 <span style="float:right;">
                     <label>Ticks: <span class="mouse-ticks-holder"></span></label>

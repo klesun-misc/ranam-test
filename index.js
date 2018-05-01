@@ -126,6 +126,9 @@
         let currentSmf = null;
         let ranamSf = null;
 
+        /** getter will be overwritten when Note display is inited */
+        let getEditorSmf = () => null;
+
         let loadSelectedFile = function (fileInfo, whenLoaded) {
             if (!fileInfo) {
                 // if user cancelled "Choose File" pop-up
@@ -204,14 +207,15 @@
         let playTrack = function(trackNum, isOud, isTabla, btn) {
             let configTrack = gui.collectParams(gui).configTracks[trackNum];
             let possible = false;
+            let smf = getEditorSmf();
             switch (null) {
-                case currentSmf: alert('Load MIDI file first!'); break;
+                case smf: alert('Load MIDI file first!'); break;
                 case ranamSf: alert('Load .sf2 first!'); break;
                 case configTrack: alert('No such track ' + trackNum + '!'); break;
                 default: possible = true;
             }
             if (possible) {
-                let smfCopy = JSON.parse(JSON.stringify(currentSmf));
+                let smfCopy = JSON.parse(JSON.stringify(smf));
                 // 0 - config track with tempo and stuff
                 let isIrrelevant = (_,i) => i !== 0 && i !== trackNum;
                 //let params = collectParams(gui);
@@ -276,6 +280,7 @@
                 });
                 setTimeout(() => synth.stopAll(), 500);
             };
+            getEditorSmf = noteDisplay.getEditorSmf;
         };
 
         let initPlaybackBtns = function() {
@@ -287,11 +292,12 @@
                 }
             };
             gui.playOutputBtn.onclick = () => {
-                if (!currentSmf) {
+                let smf = getEditorSmf();
+                if (!smf) {
                     alert('MIDI file not loaded');
                 } else {
                     let params = gui.collectParams(gui);
-                    let ranamed = ToRanamFormat(currentSmf, params);
+                    let ranamed = ToRanamFormat(smf, params);
                     gui.showMessages(ranamed);
                     if (ranamed.smfRanam) {
                         let parsed = Ns.Libs.SMFreader(ranamed.smfRanam);
@@ -349,8 +355,10 @@
             };
             gui.convertBtn.onclick = () => {
                 let params = gui.collectParams();
-                let buff = ToRanamFormat(currentSmf, params);
-                if (buff) {
+                let ranamed = ToRanamFormat(getEditorSmf(), params);
+                gui.showMessages(ranamed);
+                if (ranamed.smfRanam) {
+                    let buff = ranamed.smfRanam;
                     console.log('Converted SMF', Ns.Libs.SMFreader(buff).tracks);
                     saveMidiToDisc(buff);
                 }

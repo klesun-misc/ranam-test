@@ -83,9 +83,9 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
         // to the event that will become first after sort
         let delta = events[0].delta;
         events = events.sort((a,b) => {
-            if (isNoteOn(a) && isNoteOff(b)) {
+            if (isNoteOn(a) && !isNoteOn(b)) {
                 return 1;
-            } else if (isNoteOff(a) && isNoteOn(b)) {
+            } else if (isNoteOff(a) && !isNoteOff(b)) {
                 return -1;
             } else {
                 return 0;
@@ -128,6 +128,7 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
                         errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at note index ' + noteOnIdx + ' (' + ticks + ' ticks)');
                     }
                     if (openNotes.size > 1) {
+                        console.debug('overlap ' + ticks, tickEvents);
                         errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at note index ' + noteOnIdx + ' (' + ticks + ' ticks). Please fix them and try again');
                     }
                 } else if (isNoteOff(event)) {
