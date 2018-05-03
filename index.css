@@ -5,6 +5,7 @@ span {
     display: inline-block;
 }
 .message-container {
+    z-index: 1;
     position: fixed;
     width: 100%;
     max-height: 200px;

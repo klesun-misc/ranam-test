@@ -36,6 +36,14 @@ klesun.whenLoaded = () => {
                     let tone = event.parameter1;
                     let velo = event.parameter2;
                     let dura = 0;
+                    if (chanToNotes[chan][tone]) {
+                        // if NOTE ON on same note happens without NOTE OFF between them
+                        // got it on 59-th and 61-th event on Oud track of testShifted.mid
+                        // I guess we'll implicitly add a NOTE OFF in such case
+                        let note = chanToNotes[chan][tone];
+                        note.dura = time - note.time;
+                        notes.push(note);
+                    }
                     chanToNotes[chan][tone] = {
                         tone, time, dura, chan, velo,
                         track: i, index: noteOnIndex++,
@@ -191,7 +199,7 @@ klesun.whenLoaded = () => {
                     position: 'absolute',
                     top: 0,
                     left: toPixels(time) + POINTER_OFFSET,
-                    width: toPixels(dura),
+                    width: Math.max(toPixels(dura), 4),
                     height: '100%',
                     margin: '0',
                 },
