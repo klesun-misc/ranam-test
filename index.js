@@ -20,6 +20,7 @@
         let audioCtx = new AudioContext();
         let fluidSf = null;
         let noteDisplay = null;
+        let getStartAt = () => 0;
         let stopPlayback = () => {};
         let stopAnimation = () => {};
 
@@ -108,13 +109,14 @@
                         .forEach(dom => dom.classList.remove('current-source'));
                 };
 
-                let playback = PlaySmf(smf, synth, () => gui.collectParams(gui));
+                let startAt = getStartAt();
+                let playback = PlaySmf(smf, synth, () => gui.collectParams(gui), startAt);
                 playback.then = playbackFinished;
                 gui.switchWithStopBtn(btn).then = () => stopPlayback();
                 let ticksToTempo = getTicksToTempo(smf);
                 if (animate) {
                     stopAnimation = opt(noteDisplay).map(disp => disp.animatePointer(
-                        ticksToTempo, smf.ticksPerBeat)).def(() => {});
+                        startAt, ticksToTempo, smf.ticksPerBeat)).def(() => {});
                 }
                 stopPlayback = () => {
                     playbackFinished();
@@ -281,6 +283,7 @@
                 setTimeout(() => synth.stopAll(), 500);
             };
             getEditorSmf = noteDisplay.getEditorSmf;
+            getStartAt = noteDisplay.getCursorTicks;
         };
 
         let initPlaybackBtns = function() {
@@ -366,8 +369,6 @@
             gui.saveXmlBtn.onclick = () => {
                 let smfParams = gui.collectParams();
                 let xmlDoc = gui.collectXmlParams(smfParams.sentences);
-                /** @debug */
-                console.log(xmlDoc);
                 let pretty = prettifyXml(xmlDoc);
                 saveXmlToDisc(pretty)
             };

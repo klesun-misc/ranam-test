@@ -2,7 +2,7 @@
 var klesun = Klesun();
 klesun.requires('./Tls.js').then = (Tls) =>
 klesun.requires('./MidiUtil.js').then = (MidiUtil) =>
-klesun.whenLoaded = () => (smfReader, synth, getParams) => {
+klesun.whenLoaded = () => (smfReader, synth, getParams, startAt) => {
 
     let {opt} = Tls();
     let {isNoteOn, scaleVelocity, ticksToMillis} = MidiUtil();
@@ -35,6 +35,8 @@ klesun.whenLoaded = () => (smfReader, synth, getParams) => {
     let chordIndex = -1;
     let whenDones = [];
     let startParams = getParams();
+    let tempoStartTime = window.performance.now();
+    let tempoStartTicks = 0;
 
     /** update volume from config, add tempo event if needed (TODO) */
     let transformEvents = function(records) {
@@ -56,8 +58,38 @@ klesun.whenLoaded = () => (smfReader, synth, getParams) => {
         });
     };
 
-    let tempoStartTime = window.performance.now();
-    let tempoStartTicks = 0;
+    let handleChord = function(ticks, nextTime, realSound) {
+        for (let event of transformEvents(ticksToEvents[ticks])) {
+            if (event.type === 'MIDI') {
+                synth.handleMidiEvent(event, !realSound);
+            } else if (event.type === 'meta') {
+                // handle tempo and other stuff
+                if (event.metaType === 81) { // tempo
+                    tempo = 60 * 1000000 / event.metaData.reduce((a,b) => (a << 8) + b, 0);
+                    tempoStartTime = tempoStartTime + nextTime;
+                    tempoStartTicks = ticks;
+                }
+            }
+        }
+    };
+
+    // rewind to the start point, apply all program/bank/tempo/etc... events
+    let rewindToStart = function(ticksPerChord) {
+        let startIdx = 0;
+        for (let ticks of ticksPerChord) {
+            if (ticks >= startAt) {
+                break;
+            } else {
+                ++startIdx;
+                handleChord(ticks, 0, false);
+            }
+        }
+        return ticksPerChord.slice(startIdx)
+    };
+
+    ticksPerChord = rewindToStart(ticksPerChord);
+    tempoStartTicks = ticksPerChord[0] || 0;
+    tempoStartTime = window.performance.now();
     let playNext = () => {
         if (stopped) {
             synth.stopAll();
@@ -66,26 +98,14 @@ klesun.whenLoaded = () => (smfReader, synth, getParams) => {
             let nextTime = ticksToMillis(ticks - tempoStartTicks, smfReader.ticksPerBeat, tempo);
             let timeSkip = tempoStartTime + nextTime - window.performance.now();
             nowOrLater(timeSkip, () => {
-                for (let event of transformEvents(ticksToEvents[ticks])) {
-                    if (event.type === 'MIDI') {
-                        synth.handleMidiEvent(event);
-                    } else if (event.type === 'meta') {
-                        // handle tempo and other stuff
-                        if (event.metaType === 81) { // tempo
-                            // TODO: update currently sounding notes
-                            tempo = 60 * 1000000 / event.metaData.reduce((a,b) => (a << 8) + b, 0);
-                            tempoStartTime = tempoStartTime + nextTime;
-                            tempoStartTicks = ticks;
-                        }
+                handleChord(ticks, nextTime, true);
+                opt(getParams().tempo).get = t => {
+                    if (t != tempo) {
+                        tempo = t;
+                        tempoStartTime = tempoStartTime + nextTime;
+                        tempoStartTicks = ticks;
                     }
-                    opt(getParams().tempo).get = t => {
-                        if (t != tempo) {
-                            tempo = t;
-                            tempoStartTime = tempoStartTime + nextTime;
-                            tempoStartTicks = ticks;
-                        }
-                    };
-                }
+                };
                 playNext();
             });
         } else {

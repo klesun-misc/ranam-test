@@ -77,7 +77,7 @@ klesun.whenLoaded = () => (form) => {
                         mkDom('br', {clear: 'all'}),
                     ],
                 });
-                msgCont.insertBefore(msgBox, msgCont.firstChild);
+                msgCont.appendChild(msgBox, msgCont.firstChild);
             }
         }
     };

@@ -57,8 +57,8 @@ klesun.whenLoaded = () => {
         return {notes, otherEvents};
     };
 
-    let SCALE = 50; /* should make it configurable */
-    let POINTER_OFFSET = 50;
+    let QUARTER_WIDTH = 50; /* should make it configurable */
+    let POINTER_OFFSET = 100;
 
     let noteToEvents = (n) => [
         {
@@ -93,17 +93,22 @@ klesun.whenLoaded = () => {
 
     return (container, smf) => {
 
-        let toPixels = ticks => ticks / smf.ticksPerBeat * SCALE;
-        let toTicks = pixels => Math.max(0, pixels * smf.ticksPerBeat / SCALE);
+        let toPixels = ticks => ticks / smf.ticksPerBeat * QUARTER_WIDTH;
+        let toTicks = pixels => Math.max(0, pixels * smf.ticksPerBeat / QUARTER_WIDTH);
 
         smf = JSON.parse(JSON.stringify(smf));
         let {notes, otherEvents} = collectNotes(smf);
         let lastTick = notes.reduce((max, n) => Math.max(max, n.time + n.dura), 0);
         let wasChanged = false;
         let noteList = $$('.note-list', container)[0];
+        let scrollableContent = $$('.scrollable-content', container)[0];
         let scroll = $$('.scroll', container)[0];
         let rows = $$(':scope > *', noteList);
         let noteInfoPanel = $$('.note-info-panel', container)[0];
+        // let slider = $$('.moving-time-pointer .slider', container)[0];
+        let slider = $$('.moving-time-pointer .slider', container)[0];
+        let sliderRoot = $$('.moving-time-pointer', container)[0];
+        let sliderHolder = $$('.slider-holder', container)[0];
 
         let getEditorSmf = () => {
             // like normal events, but with absolute
@@ -210,7 +215,7 @@ klesun.whenLoaded = () => {
                 let endX = POINTER_OFFSET + toPixels(time) + toPixels(dura);
                 maxX = Math.max(maxX, endX);
             }
-            noteList.style.width = maxX + scroll.clientWidth - POINTER_OFFSET || '100%';
+            scrollableContent.style.width = maxX + scroll.clientWidth - POINTER_OFFSET || '100%';
             scroll.scrollTop = (scroll.scrollHeight - scroll.clientHeight) * 2 / 3;
             scroll.scrollLeft = 0;
         };
@@ -238,14 +243,25 @@ klesun.whenLoaded = () => {
             return stopScrolling;
         };
 
-        let animatePointer = function(ticksToTempo, ticksPerBeat) {
+        let animatePointer = function(startAt, ticksToTempo, ticksPerBeat) {
             stopTempoScheduling();
             let tempo = 120;
             let stopped = false;
-            scroll.scrollLeft = 0;
+            scroll.scrollLeft = toPixels(startAt);
+            for (let [ticks, tickTempo] of Object.entries(ticksToTempo)) {
+                if (ticks < startAt) {
+                    tempo = tickTempo;
+                    delete(ticksToTempo[ticks]);
+                } else {
+                    break;
+                }
+            }
             let entries = Object.entries(ticksToTempo);
+            // a fishy way to immediately go to the start position
+            ticksToTempo = Object.assign({[startAt]: 120}, ticksToTempo);
+
             let tempoStartTime = window.performance.now();
-            let tempoStartTicks = 0;
+            let tempoStartTicks = startAt;
             let doNext = (i) => {
                 if (stopped) {
                     // ^_^ do nothing
@@ -276,28 +292,80 @@ klesun.whenLoaded = () => {
             };
             return stopTempoScheduling;
         };
+        /** return closest pixel to precise multiple of 1/16 note */
+        let roundToSixteenth = function(pixels) {
+            let quarters = Math.round(pixels / QUARTER_WIDTH * 8);
+            return quarters * QUARTER_WIDTH / 8;
+        };
 
+        container.classList.add('initialized');
         putNotes();
         noteList.onmouseout = (e) => {
             $$('.mouse-ticks-holder', noteInfoPanel)[0].innerHTML = '';
             $$('.mouse-semitone-holder', noteInfoPanel)[0].innerHTML = '';
         };
-        noteList.onmousemove = (e) => {
-            let bounds = noteList.getBoundingClientRect();
-            let x = event.clientX - bounds.left;
-            let y = event.clientY - bounds.top;
+        let updateMousePos = function(x,y) {
             let ticks = Math.round(toTicks(x - POINTER_OFFSET));
             let semitone = 127 - Math.round(y / rows[0].offsetHeight);
             $$('.mouse-ticks-holder', noteInfoPanel)[0].innerHTML = ticks;
             $$('.mouse-semitone-holder', noteInfoPanel)[0].innerHTML = semitone;
+        };
+        scrollableContent.onmousemove = (e) => {
+            let bounds = scrollableContent.getBoundingClientRect();
+            let x = event.clientX - bounds.left;
+            let y = event.clientY - bounds.top;
+            updateMousePos(x,y);
+        };
+        sliderHolder.onmousedown = e => {
+            let bounds = sliderHolder.getBoundingClientRect();
+            let x = event.clientX - bounds.left;
+            let y = event.clientY - bounds.top;
+            sliderRoot.style.left = Math.max(roundToSixteenth(x), POINTER_OFFSET);
+        };
+        sliderRoot.ondrag = (e) => {
+            // to not who image copy by the cursor
+            e.dataTransfer.dropEffect = "move";
+
+            // so that dragging did not cause it to scroll
+            scroll.style['overflow-y'] = 'hidden';
+
+            let bounds = scrollableContent.getBoundingClientRect();
+            let x = event.clientX - bounds.left;
+            let y = event.clientY - bounds.top;
+            updateMousePos(x,y);
+
+            /** seems like a bug, https://stackoverflow.com/q/12128216/2750743 */
+            if (event.screenX !== 0) {
+                sliderRoot.style.left = Math.max(roundToSixteenth(x), POINTER_OFFSET);
+            }
+        };
+        sliderRoot.ondragend = (e) => {
+            scroll.style['overflow-y'] = 'scroll';
+        };
+
+        // set drag cursor... yeah
+        sliderRoot.ondragover = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'none';
+        };
+        slider.ondragover = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'move';
+        };
+        sliderHolder.ondragover = e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
         };
 
         return {
             set onNoteClick(cb) { onNoteClick = cb; },
             set onNoteOver(cb) { onNoteOver = cb; },
             set onNoteOut(cb) { onNoteOut = cb; },
-            animatePointer: (ticksToTempo, ticksPerBeat) => animatePointer(ticksToTempo, ticksPerBeat),
+            animatePointer: animatePointer,
             getEditorSmf: () => wasChanged ? getEditorSmf() : smf,
+            getCursorTicks: () => toTicks(sliderRoot.offsetLeft - POINTER_OFFSET),
         };
     };
 };

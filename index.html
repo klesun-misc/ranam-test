@@ -9,37 +9,9 @@
 <body>
 
 <div id="midi-file-params">
-    <p>This is a test page that converts General MIDI file to a Ranam-format MIDI file with Oud and Tabla</p>
+    <p>This page allows you to convert General MIDI file to a Ranam-format MIDI file with Oud and Tabla</p>
     <p>It adds a quarter-tone pitch-bend on some regions defined by user. The note that gets pitch-bended depends on Scale</p>
 
-    <form class="xml-data">
-        <div style="text-align: center; font-weight: bold">
-            <span>XML data</span>
-            <button class="save-xml" type="button" onclick="alert('TODO: implement!');">Save .xml file</button>
-        </div>
-        <label>Name: <input name="name" type="text" value="Ya Dar"/></label>
-        <label>Hide Flags: <input name="hideFlags" type="text" value="None"/></label>
-        <label>Product ID: <input name="productId" type="number" value="731266" min="0"/></label>
-        <label>MIDI File Path: <input name="midiFilePath" type="text" value="/Songs/Ya Dar.mid"/></label>
-        <div>
-            <label>Text Asset Name: <input name="textAssetName" type="text" value="Ya Dar.mid"/></label>
-            <label>Text Asset Hide Flags: <input name="textAssetHideFlags" type="text" value="NotEditable"/></label>
-        </div>
-        <div>
-            <label>Level: <select name="level">
-                <option>Easy</option>
-                <option>Medium</option>
-                <option>Hard</option>
-            </select></label>
-            <label>Song Name Key: <input name="songNameKey" type="text" value="YaDar"/></label>
-            <label>Scale Name Key: <input name="scaleNameKey" type="text" value="Kord_La"/></label>
-        </div>
-        <div>
-            <label>Musician Name Key: <input name="musicianNameKey" type="text" value="RabehSagur"/></label>
-            <label>Is Locked: <input name="isLocked" type="checkbox"/></label>
-            <label>Price: <input name="price" type="number" min="0.00" value="1" step="0.10"/></label>
-        </div>
-    </form>
     <form>
         <label>MIDI file: <input required="required" type="file" class="midi-file" accept=".mid"/></label><br/>
         <fieldset class="needs-smf" disabled="disabled" title="Load MIDI file first!">
@@ -177,175 +149,210 @@
             <button type="button" title="Upload General MIDI first!" class="convert-to-arabic">Save converted .mid</button>
         </fieldset>
         <div class="note-display-cont">
-            <div style="position: relative">
-                <div class="time-pointer"></div>
-                <div class="scroll">
-                    <div class="note-list">
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>  <!-- Do 120 -->
+                        <div style="position: relative">
+                            <div class="static-time-pointer"></div>
+                            <div class="scroll">
+                                <div class="scrollable-content">
+                                    <div class="slider-holder">
+                                        <div class="moving-time-pointer">
+                                            <div draggable="true" class="slider" title="Drag me!"></div>
+                                        </div>
+                                    </div>
+                                    <div class="note-list">
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>  <!-- Do 120 -->
 
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>  <!-- Do 108 -->
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>  <!-- Do 108 -->
 
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>  <!-- Do 96 -->
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>  <!-- Do 96 -->
 
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>  <!-- Do 84 -->
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>  <!-- Do 84 -->
 
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>  <!-- Do 72 -->
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>  <!-- Do 72 -->
 
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>  <!-- Do 60 -->
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>  <!-- Do 60 -->
 
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>  <!-- Do 48 -->
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>  <!-- Do 48 -->
 
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>  <!-- Do 36 -->
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>  <!-- Do 36 -->
 
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>  <!-- Do 24 -->
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>  <!-- Do 24 -->
 
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div> <!-- Do 12 -->
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div> <!-- Do 12 -->
 
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div>
-                        <div class="ebony"></div>
-                        <div class="ivory"></div> <!-- Do 0 -->
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div>
+                                        <div class="ebony"></div>
+                                        <div class="ivory"></div> <!-- Do 0 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="note-info-panel">
+                            <span>
+                                <label>Channel: <span class="chan colorize-channel-bg"></span></label>
+                                <label>Track: <span class="track"></span></label>
+                                <label>Index: <span class="index"></span></label>
+                                <label>Semitone: <input class="tone" type="number" min="0" max="127"/></label>
+                                <label>Start Ticks: <input class="time" type="number" min="0" style="width: 60px;"/></label>
+                                <label>Duration: <input class="dura" type="number" min="0" style="width: 60px;"/></label>
+                                <label>Velocity: <input class="velo" type="number" min="1" max="127" step="3"/></label>
+                            </span>
+                            <span style="float:right;">
+                                <label>Ticks: <span class="mouse-ticks-holder"></span></label>
+                                <label>Pitch: <span class="mouse-semitone-holder"></span></label>
+                            </span>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div class="note-info-panel">
-                <span>
-                    <label>Channel: <span class="chan colorize-channel-bg"></span></label>
-                    <label>Track: <span class="track"></span></label>
-                    <label>Index: <span class="index"></span></label>
-                    <label>Semitone: <input class="tone" type="number" min="0" max="127"/></label>
-                    <label>Start Ticks: <input class="time" type="number" min="0" style="width: 60px;"/></label>
-                    <label>Duration: <input class="dura" type="number" min="0" style="width: 60px;"/></label>
-                    <label>Velocity: <input class="velo" type="number" min="1" max="127" step="3"/></label>
-                </span>
-                <span style="float:right;">
-                    <label>Ticks: <span class="mouse-ticks-holder"></span></label>
-                    <label>Pitch: <span class="mouse-semitone-holder"></span></label>
-                </span>
-            </div>
+    </form>
+    <form class="xml-data">
+        <div style="text-align: center; font-weight: bold">
+            <span>XML data</span>
+            <button class="save-xml" type="button" onclick="alert('TODO: implement!');">Save .xml file</button>
         </div>
-        <div class="playback-config">
-            <h3>Playback (DEBUG)</h3>
-            <p class="sf2-http-status" style="color: yellow;">Loading Oud/Tabla soundfont via HTTP... (~10 MiB)</p>
-            <p class="sf2-http-status-fluid" style="color: yellow;">Loading General soundfont via HTTP... (~18 MiB)</p>
-            <label>Custom soundfont .sf2 file: <input type="file" class="soundfont-file" accept=".sf2,.sf3"/></label>
-            <img class="soundfont-loading" src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Loading_icon.gif" style="display: none;"/>
-            <button type="button" class="test-sf3-decoding" onclick="alert('Load .sf3 first!');">Test .sf3 decoding</button>
+        <label>Name: <input name="name" type="text" value="Ya Dar"/></label>
+        <label>Hide Flags: <input name="hideFlags" type="text" value="None"/></label>
+        <label>Product ID: <input name="productId" type="number" value="731266" min="0"/></label>
+        <label>MIDI File Path: <input name="midiFilePath" type="text" value="/Songs/Ya Dar.mid"/></label>
+        <div>
+            <label>Text Asset Name: <input name="textAssetName" type="text" value="Ya Dar.mid"/></label>
+            <label>Text Asset Hide Flags: <input name="textAssetHideFlags" type="text" value="NotEditable"/></label>
+        </div>
+        <div>
+            <label>Level: <select name="level">
+                <option>Easy</option>
+                <option>Medium</option>
+                <option>Hard</option>
+            </select></label>
+            <label>Song Name Key: <input name="songNameKey" type="text" value="YaDar"/></label>
+            <label>Scale Name Key: <input name="scaleNameKey" type="text" value="Kord_La"/></label>
+        </div>
+        <div>
+            <label>Musician Name Key: <input name="musicianNameKey" type="text" value="RabehSagur"/></label>
+            <label>Is Locked: <input name="isLocked" type="checkbox"/></label>
+            <label>Price: <input name="price" type="number" min="0.00" value="1" step="0.10"/></label>
         </div>
     </form>
+    <div class="playback-config">
+        <h3>Playback (DEBUG)</h3>
+        <p class="sf2-http-status" style="color: yellow;">Loading Oud/Tabla soundfont via HTTP... (~10 MiB)</p>
+        <p class="sf2-http-status-fluid" style="color: yellow;">Loading General soundfont via HTTP... (~18 MiB)</p>
+        <label>Custom soundfont .sf2 file: <input type="file" class="soundfont-file" accept=".sf2,.sf3"/></label>
+        <img class="soundfont-loading" src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Loading_icon.gif" style="display: none;"/>
+        <button type="button" class="test-sf3-decoding" onclick="alert('Load .sf3 first!');">Test .sf3 decoding</button>
+    </div>
     <div class="message-container" ></div>
 </div>
 
