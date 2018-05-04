@@ -214,6 +214,12 @@ table.tracks .holder.event-cnt { text-align: right; }
     min-width: 20px;
     margin-right: 8px;
 }
+.note-info-panel .mouse-ticks-holder {
+    min-width: 48px;
+}
+.note-info-panel .mouse-semitone-holder {
+    min-width: 24px;
+}
 .note-display-cont {
     position: relative;
     border: solid #0a25aa 2px;
@@ -252,9 +258,10 @@ table.tracks .holder.event-cnt { text-align: right; }
 }
 .static-time-pointer {
     position: absolute;
-    width: 4px;
+    width: 2px;
+    top: 0;
     left: 100px;
-    height: 100%;
+    height: calc(100% - 2 * var(--rect-height));
     background-color: red;
     z-index: 1;
 }

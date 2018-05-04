@@ -117,6 +117,7 @@ klesun.whenLoaded = () => {
         let scroll = $$('.scroll', container)[0];
         let rows = $$(':scope > *', noteList);
         let noteInfoPanel = $$('.note-info-panel', container)[0];
+        let animateFlag = $$('input[type="checkbox"].allow-animation', container)[0];
         // let slider = $$('.moving-time-pointer .slider', container)[0];
         let slider = $$('.moving-time-pointer .slider', container)[0];
         let sliderRoot = $$('.moving-time-pointer', container)[0];
@@ -261,6 +262,9 @@ klesun.whenLoaded = () => {
 
         let animatePointer = function(startAt, ticksToTempo, ticksPerBeat) {
             stopTempoScheduling();
+            if (!animateFlag.checked) {
+                return;
+            }
             let tempo = 120;
             let stopped = false;
             scroll.scrollLeft = toPixels(startAt);
