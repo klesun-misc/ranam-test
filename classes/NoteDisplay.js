@@ -36,27 +36,19 @@ klesun.whenLoaded = () => {
                     let tone = event.parameter1;
                     let velo = event.parameter2;
                     let dura = 0;
-                    if (chanToNotes[chan][tone]) {
-                        // if NOTE ON on same note happens without NOTE OFF between them
-                        // got it on 59-th and 61-th event on Oud track of testShifted.mid
-                        // I guess we'll implicitly add a NOTE OFF in such case
-                        let note = chanToNotes[chan][tone];
-                        note.dura = time - note.time;
-                        notes.push(note);
-                    }
-                    chanToNotes[chan][tone] = {
+                    chanToNotes[chan][tone] = chanToNotes[chan][tone] || [];
+                    chanToNotes[chan][tone].push({
                         tone, time, dura, chan, velo,
                         track: i, index: noteOnIndex++,
-                    };
+                    });
                 } else if (isNoteOff(event)) {
                     let chan = event.midiChannel;
                     let tone = event.parameter1;
-                    let note = chanToNotes[chan][tone];
-                    if (note) {
+                    for (let note of chanToNotes[chan][tone] || []) {
                         note.dura = time - note.time;
                         notes.push(note);
-                        delete chanToNotes[chan][tone];
                     }
+                    chanToNotes[chan][tone] = [];
                 } else {
                     otherEvents.push({time, event, track: i});
                 }
@@ -90,7 +82,19 @@ klesun.whenLoaded = () => {
     ];
 
     let sortAndAddDelta = (absEvents) => {
-        absEvents.sort((a,b) => a.time - b.time);
+        absEvents.sort((a,b) => {
+            if (a.time == b.time) {
+                if (isNoteOn(a) && !isNoteOn(b)) {
+                    return 1;
+                } else if (isNoteOff(a) && !isNoteOff(b)) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            } else {
+                return a.time - b.time;
+            }
+        });
         let time = 0;
         for (let absEvent of absEvents) {
             absEvent.delta = absEvent.time - time;
@@ -172,10 +176,10 @@ klesun.whenLoaded = () => {
             veloInp.value = note.velo;
             let onInput = () => {
                 wasChanged = true;
-                note.tone = toneInp.value;
-                note.time = timeInp.value;
-                note.dura = duraInp.value;
-                note.velo = veloInp.value;
+                note.tone = +toneInp.value;
+                note.time = +timeInp.value;
+                note.dura = +duraInp.value;
+                note.velo = +veloInp.value;
                 dom.remove();
                 let rect = addNoteRect(note);
                 setCurrentNote(rect, note);
@@ -307,6 +311,7 @@ klesun.whenLoaded = () => {
         };
 
         container.classList.add('initialized');
+        sliderRoot.style.left = POINTER_OFFSET;
         putNotes();
         noteList.onmouseout = (e) => {
             $$('.mouse-ticks-holder', noteInfoPanel)[0].innerHTML = '';

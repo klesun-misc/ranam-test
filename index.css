@@ -256,6 +256,7 @@ table.tracks .holder.event-cnt { text-align: right; }
     left: 100px;
     height: 100%;
     background-color: red;
+    z-index: 1;
 }
 .slider-holder {
     cursor: hand;

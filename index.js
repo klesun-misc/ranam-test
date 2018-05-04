@@ -14,7 +14,7 @@
         let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
 
         let {http, opt, promise, deepCopy} = Tls();
-        let {isNoteOn, scaleVelocity} = MidiUtil();
+        let {isNoteOn, scaleVelocity, fixLogicProNoteOffOrder} = MidiUtil();
         let gui = Gui(form);
 
         let audioCtx = new AudioContext();
@@ -335,7 +335,9 @@
                 (smfBuf) => {
                     let smf = Ns.Libs.SMFreader(smfBuf);
                     if (smf) {
-                        console.log('Parsed SMF', smf);
+                        console.log('Raw SMF', smf);
+                        smf = fixLogicProNoteOffOrder(smf);
+                        console.log('fixLogicProNoteOffOrder() result', smf);
                         currentSmf = smf;
                         populateSmfGui(smf);
                     } else {

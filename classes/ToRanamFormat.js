@@ -58,49 +58,10 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
         ];
     };
 
-    /** take events that happen at current tick */
-    let takeTickEvents = function(events, startOffset)
-    {
-        let taken = [];
-        for (let i = startOffset; i < events.length; ++i) {
-            let event = events[i];
-            if (i === startOffset || event.delta === 0) {
-                taken.push(event);
-            } else {
-                break;
-            }
-        }
-        return taken;
-    };
-
-    /**
-     * make sure NOTE OFF is always before NOTE ON so we
-     * could put PITCH BEND before NOTE ON but after NOTE OFF
-     */
-    let sortTickEvents = function(events)
-    {
-        // only first has not 0 delta, it should be reassigned
-        // to the event that will become first after sort
-        let delta = events[0].delta;
-        events = events.sort((a,b) => {
-            if (isNoteOn(a) && !isNoteOn(b)) {
-                return 1;
-            } else if (isNoteOff(a) && !isNoteOff(b)) {
-                return -1;
-            } else {
-                return 0;
-            }
-        });
-        events.forEach(e => e.delta = 0);
-        events[0].delta = delta;
-        return events;
-    };
-
-    let normalizeSmf = function()
+    let validateSmf = function()
     {
         let errors = [];
         let warnings = [];
-        smfReader = JSON.parse(JSON.stringify(smfReader));
 
         let oudTrackNum = formParams.oudTrackNum;
         if (oudTrackNum > smfReader.tracks.length) {
@@ -110,36 +71,28 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
 
         let noteOnIdx = -1;
         let openNotes = new Set();
-        let sortedEvents = [];
         let ticks = 0;
         for (let i = 0; i < oudTrack.events.length; ++i) {
-            let tickEvents = takeTickEvents(oudTrack.events, i);
-            i += tickEvents.length - 1;
-            tickEvents = sortTickEvents(tickEvents);
-            sortedEvents.push(...tickEvents);
-            for (let j = 0; j < tickEvents.length; ++j) {
-                let event = tickEvents[j];
-                ticks += event.delta;
-                if (isNoteOn(event)) {
-                    ++noteOnIdx;
-                    let semitone = event.parameter1;
-                    openNotes.add(semitone);
-                    if (semitone < 43 || semitone > 64) {
-                        errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at note index ' + noteOnIdx + ' (' + ticks + ' ticks)');
-                    }
-                    if (openNotes.size > 1) {
-                        console.debug('overlap ' + ticks, tickEvents);
-                        errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at note index ' + noteOnIdx + ' (' + ticks + ' ticks). Please fix them and try again');
-                    }
-                } else if (isNoteOff(event)) {
-                    let semitone = event.parameter1;
-                    openNotes.delete(semitone);
-                } else if (isPitchBend(event)) {
-                    warnings.push('Your MIDI has pitchbend already at note index ' + noteOnIdx + ' (' + ticks + ' ticks). Please remove them if you don’t want them');
+            let event = oudTrack.events[i];
+            ticks += event.delta;
+            if (isNoteOn(event)) {
+                ++noteOnIdx;
+                let semitone = event.parameter1;
+                openNotes.add(semitone);
+                if (semitone < 43 || semitone > 64) {
+                    errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at note index ' + noteOnIdx + ' (' + ticks + ' ticks)');
                 }
+                if (openNotes.size > 1) {
+                    console.debug('overlap ' + ticks, oudTrack.events);
+                    errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at note index ' + noteOnIdx + ' (' + ticks + ' ticks). Please fix them and try again');
+                }
+            } else if (isNoteOff(event)) {
+                let semitone = event.parameter1;
+                openNotes.delete(semitone);
+            } else if (isPitchBend(event)) {
+                warnings.push('Your MIDI has pitchbend already at note index ' + noteOnIdx + ' (' + ticks + ' ticks). Please remove them if you don’t want them');
             }
         }
-        oudTrack.events = sortedEvents;
         return {
             errors: errors,
             warnings: warnings,
@@ -329,7 +282,7 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
     {
         console.log(formParams);
 
-        let normalized = normalizeSmf();
+        let normalized = validateSmf();
         if (normalized.errors.length > 0) {
             normalized.smfRanam = null;
         } else {
