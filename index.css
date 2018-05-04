@@ -148,7 +148,11 @@ input.pitch-result {
 .time-sig-holder {
     font-weight: bold;
 }
-
+.tempo-list > * {
+    background-color: #ecfbfd;
+    border: solid black 1px;
+    padding: 2px;
+}
 /* track table */
 
 table.tracks {

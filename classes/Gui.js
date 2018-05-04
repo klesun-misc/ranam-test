@@ -17,10 +17,11 @@ klesun.whenLoaded = () => (form) => {
     let smfInput = $$('input[type="file"].midi-file', form)[0];
     let sf2Input = $$('input[type="file"].soundfont-file', form)[0];
     let smfFieldSet = $$('fieldset.needs-smf', form)[0];
+
     let ticksPerBeatHolder = $$('.ticks-per-beat', form)[0];
-    let tempoHolder = $$('.tempo-holder', form)[0];
+    let tempoList = $$('.tempo-list', form)[0];
+    let tempoBlockRef = $$('.tempo-list > *', form)[0].cloneNode(true);
     let timeSigHolder = $$('.time-sig-holder', form)[0];
-    let discardTempoChangesBtn = $$('button.discard-tempo-changes', form)[0];
     let tempoInput = $$('input.tempo', form)[0];
     let trackList = $$('tbody.current-tracks', form)[0];
     let trackTrRef = $$('.current-tracks tr')[0].cloneNode(true);
@@ -41,6 +42,7 @@ klesun.whenLoaded = () => (form) => {
     let soundfontLoadingImg = $$('img.soundfont-loading', form)[0];
     let playInputBtn = $$('button.play-input', form)[0];
     let playOutputBtn = $$('button.play-output', form)[0];
+    let playWithoutOudBtn = $$('button.play-without-oud', form)[0];
     let testSf3DecodingBtn = $$('button.test-sf3-decoding', form)[0];
     let msgCont = $$('.message-container', form)[0];
 
@@ -100,7 +102,19 @@ klesun.whenLoaded = () => (form) => {
         to: $$('input.to', div)[0].value,
     };
 
+    let dict = function(pairs) {
+        let result = {};
+        for (let [k,v] of pairs) {
+            result[k] = v;
+        }
+        return result;
+    };
+
     let collectParams = () => 1 && {
+        ticksToTempo: dict($$(':scope > *', tempoList).map(block => [
+            +$$('input.start-at', block)[0].value,
+            +$$('input.tempo', block)[0].value,
+        ])),
         tempo: tempoInput.style.display !== 'none' ? tempoInput.value : null,
         scaleRegions: $$(':scope > *', regionListCont).map(collectRegion),
         sentences: $$(':scope > *', sentenceListCont).map(collectSentence),
@@ -402,20 +416,13 @@ klesun.whenLoaded = () => (form) => {
         timeSigHolder.innerHTML = Object.values(ticksToTimeSig)
             .map(sig => sig.num + '/' + sig.den).join(', ').slice(0, 20);
         let ticksToTempo = smfAdapter.ticksToTempo;
-        let tempos = Object.values(ticksToTempo);
-        tempoHolder.innerHTML = tempos.map(t => Math.round(t)).join(', ').slice(0, 20) || '120';
-        tempoInput.value = tempos.reduce((sum, t) => sum + t, 0) / tempos.length;
-        if (new Set(tempos).size > 1) {
-            // hide tempo input, show discard button
-            tempoHolder.style.display = 'inline';
-            discardTempoChangesBtn.style.display = 'inline';
-            tempoInput.style.display = 'none';
-        } else {
-            // hide unmodifiable span
-            tempoHolder.style.display = 'none';
-            discardTempoChangesBtn.style.display = 'none';
-            tempoInput.style.display = 'inline';
-        }
+        tempoList.innerHTML = '';
+        Object.entries(ticksToTempo).forEach(([ticks, tempo]) => {
+            let block = tempoBlockRef.cloneNode(true);
+            $$('input.start-at', block)[0].value = ticks;
+            $$('input.tempo', block)[0].value = tempo;
+            tempoList.appendChild(block);
+        });
         updateAllRanges();
         return {
             set onPlayTrackClick(cb) {
@@ -452,6 +459,7 @@ klesun.whenLoaded = () => (form) => {
         soundfontLoadingImg: soundfontLoadingImg,
         playInputBtn: playInputBtn,
         playOutputBtn: playOutputBtn,
+        playWithoutOudBtn: playWithoutOudBtn,
         testSf3DecodingBtn: testSf3DecodingBtn,
     };
 };

@@ -83,7 +83,9 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
                     errors.push('Notes in the Oud track (' + semitone + ') are outside of range (43-64) at note index ' + noteOnIdx + ' (' + ticks + ' ticks)');
                 }
                 if (openNotes.size > 1) {
-                    console.debug('overlap ' + ticks, oudTrack.events);
+                    if (errors.length === 0) {
+                        console.debug('overlap ' + ticks, oudTrack.events);
+                    }
                     errors.push('You have overlapping notes ' + [...openNotes].join(',') + ' at note index ' + noteOnIdx + ' (' + ticks + ' ticks). Please fix them and try again');
                 }
             } else if (isNoteOff(event)) {
@@ -181,9 +183,6 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
                 // End Of Track message, will be added automatically by
                 // jsmidgen, so no need to dupe it, it causes problems
                 return null;
-            } else if (readerEvent.metaType === 81 && formParams.tempo) {
-                // tempo overwritten by params
-                return null;
             } else {
                 return new Midi.MetaEvent({
                     time: readerEvent.delta,
@@ -219,10 +218,6 @@ klesun.whenLoaded = () => (smfReader, formParams) => {
                 // add control change event and program change 123, bird tweet
                 makeOudEvents(0)
                     .forEach(e => jsmidgenTrack.addEvent(e));
-            }
-            if (i === 0) { // meta track
-                opt(formParams.tempo).get = tempo =>
-                    jsmidgenTrack.setTempo(tempo)
             }
 
             let noteIdx = -1;

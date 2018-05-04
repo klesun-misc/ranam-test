@@ -14,7 +14,7 @@
         let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
 
         let {http, opt, promise, deepCopy} = Tls();
-        let {isNoteOn, scaleVelocity, fixLogicProNoteOffOrder} = MidiUtil();
+        let {isNoteOn, scaleVelocity, fixLogicProNoteOffOrder, changeTempo} = MidiUtil();
         let gui = Gui(form);
 
         let audioCtx = new AudioContext();
@@ -83,15 +83,6 @@
             return ticksToTempo;
         };
 
-        let getTicksToTempo = function (smf) {
-            let overwrittenTempo = gui.collectParams().tempo;
-            if (overwrittenTempo) {
-                return {0: overwrittenTempo};
-            } else {
-                return collectTicksToTempo(smf);
-            }
-        };
-
         let playSmf = (smf, sf2, btn, animate) => {
             if (!ranamSf || !fluidSf) {
                 gui.showMessages({errors: ['Wait for soundfont data to load!']});
@@ -113,7 +104,7 @@
                 let playback = PlaySmf(smf, synth, () => gui.collectParams(gui), startAt);
                 playback.then = playbackFinished;
                 gui.switchWithStopBtn(btn).then = () => stopPlayback();
-                let ticksToTempo = getTicksToTempo(smf);
+                let ticksToTempo = gui.collectParams().ticksToTempo;
                 if (animate) {
                     stopAnimation = opt(noteDisplay).map(disp => disp.animatePointer(
                         startAt, ticksToTempo, smf.ticksPerBeat)).def(() => {});
@@ -269,9 +260,6 @@
             let smfGui = gui.populateSmfGui(smfAdapter);
             smfGui.onPlayTrackClick = playTrack;
 
-            // probably could reschedule animation instead of completely stopping...
-            gui.tempoInput.onchange = () => stopAnimation();
-
             noteDisplay = NoteDisplay(gui.noteDisplayCont, smf);
             noteDisplay.onNoteClick = (note) => opt(ranamSf).get = (sf) => {
                 let synth = Synth(audioCtx, sf, () => fluidSf);
@@ -282,18 +270,16 @@
                 });
                 setTimeout(() => synth.stopAll(), 500);
             };
-            getEditorSmf = noteDisplay.getEditorSmf;
+            getEditorSmf = () => {
+                let smf = noteDisplay.getEditorSmf();
+                smf = changeTempo(smf, gui.collectParams().ticksToTempo);
+                console.debug('changeTempo() result', smf);
+                return smf;
+            };
             getStartAt = noteDisplay.getCursorTicks;
         };
 
         let initPlaybackBtns = function() {
-            gui.playInputBtn.onclick = () => {
-                if (!currentSmf) {
-                    alert('MIDI file not loaded');
-                } else {
-                    playSmf(currentSmf, ranamSf, gui.playInputBtn, true);
-                }
-            };
             gui.playOutputBtn.onclick = () => {
                 let smf = getEditorSmf();
                 if (!smf) {
@@ -306,6 +292,14 @@
                         let parsed = Ns.Libs.SMFreader(ranamed.smfRanam);
                         playSmf(parsed, ranamSf, gui.playOutputBtn, true);
                     }
+                }
+            };
+            gui.playWithoutOudBtn.onclick = () => {
+                let smf = getEditorSmf();
+                if (!smf) {
+                    alert('MIDI file not loaded');
+                } else {
+                    playSmf(smf, ranamSf, gui.playOutputBtn, true);
                 }
             };
         };

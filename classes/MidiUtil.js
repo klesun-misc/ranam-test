@@ -87,6 +87,83 @@ define([], () => () => {
         return smfReader;
     };
 
+    let makeTempo = (delta, tempo) => {
+        // tempo = 60 * 1000000 / event.metaData.reduce((a,b) => (a << 8) + b, 0);
+        // f(bytes) = Math.floor(60 * 1000000 / tempo)
+
+        var mpqn = Math.floor(60000000 / tempo); // & 0xFFFFFF;
+        var ret=[];
+        do {
+            ret.unshift(mpqn & 0xFF);
+            mpqn >>= 8;
+        } while (mpqn);
+        while (ret.length < 3) {
+            ret.push(0);
+        }
+        return {
+            delta: delta,
+            type: 'meta',
+            metaType: 81,
+            metaData: ret,
+        };
+    };
+
+    let changeTempo = (smf, ticksToTempo) => {
+        smf = JSON.parse(JSON.stringify(smf));
+        // remove all existing tempo events
+        for (let track of smf.tracks) {
+            let deltaRest = 0;
+            let templessEvents = [];
+            for (let event of track.events) {
+                if (event.type === 'meta' && event.metaType == 81) { // tempo
+                    deltaRest += event.delta;
+                } else {
+                    event.delta += deltaRest;
+                    deltaRest = 0;
+                    templessEvents.push(event);
+                }
+            }
+            track.events = templessEvents;
+        }
+
+        // add tempo events to zeroth track
+        let tempoTicksLeft = Object.keys(ticksToTempo);
+        let tempfulEvents = [];
+        let ticks = 0;
+        for (let event of smf.tracks[0].events) {
+            while (tempoTicksLeft.length > 0 && ticks + event.delta >= tempoTicksLeft[0]) {
+                let tempoTicks = tempoTicksLeft[0];
+                let tempoDelta = tempoTicks - ticks;
+                tempfulEvents.push(makeTempo(tempoDelta, ticksToTempo[tempoTicks]));
+                ticks += tempoDelta;
+                event.delta -= tempoDelta;
+                tempoTicksLeft = tempoTicksLeft.slice(1);
+            }
+            tempfulEvents.push(event);
+            ticks += event.delta;
+        }
+        smf.tracks[0].events = tempfulEvents;
+        return smf;
+    };
+
+    let getTempo = (ticksNow, ticksToTempo) => {
+        let tempoNow = 120;
+        for (let [ticks, tempo] of Object.entries(ticksToTempo)) {
+            if (ticks <= ticksNow) {
+                tempoNow = tempo;
+            } else {
+                break;
+            }
+        }
+        return tempoNow;
+    };
+
+    let getTicksNow = (startTime, startTicks, ticksToTempo) => {
+        let now = window.performance.now();
+        throw new Error('TODO: implement!');
+        return ticksNow;
+    };
+
     return {
         isNoteOn: isNoteOn,
         isNoteOff: isNoteOff,
@@ -94,5 +171,8 @@ define([], () => () => {
         scaleVelocity: scaleVelocity,
         ticksToMillis: ticksToMillis,
         fixLogicProNoteOffOrder: fixLogicProNoteOffOrder,
+        changeTempo: changeTempo,
+        getTempo: getTempo,
+        getTicksNow: getTicksNow,
     };
 });

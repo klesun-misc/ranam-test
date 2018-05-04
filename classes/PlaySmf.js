@@ -5,7 +5,7 @@ klesun.requires('./MidiUtil.js').then = (MidiUtil) =>
 klesun.whenLoaded = () => (smfReader, synth, getParams, startAt) => {
 
     let {opt} = Tls();
-    let {isNoteOn, scaleVelocity, ticksToMillis} = MidiUtil();
+    let {isNoteOn, scaleVelocity, ticksToMillis, getTempo} = MidiUtil();
 
     /** do setTimeout() or do on this thread if time is zero */
     let nowOrLater = (millis, callback) => {
@@ -29,7 +29,7 @@ klesun.whenLoaded = () => (smfReader, synth, getParams, startAt) => {
         }
     }
     let ticksPerChord = Object.keys(ticksToEvents)
-        .sort((a,b) => a - b);
+        .map(a => +a).sort((a,b) => a - b);
     let tempo = 120;
     let stopped = false;
     let chordIndex = -1;
@@ -99,13 +99,12 @@ klesun.whenLoaded = () => (smfReader, synth, getParams, startAt) => {
             let timeSkip = tempoStartTime + nextTime - window.performance.now();
             nowOrLater(timeSkip, () => {
                 handleChord(ticks, nextTime, true);
-                opt(getParams().tempo).get = t => {
-                    if (t != tempo) {
-                        tempo = t;
-                        tempoStartTime = tempoStartTime + nextTime;
-                        tempoStartTicks = ticks;
-                    }
-                };
+                //let t = getTempo(ticks, getParams().ticksToTempo);
+                //if (t != tempo) {
+                //    tempo = t;
+                //    tempoStartTime = tempoStartTime + nextTime;
+                //    tempoStartTicks = ticks;
+                //}
                 playNext();
             });
         } else {
