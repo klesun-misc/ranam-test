@@ -176,6 +176,10 @@ klesun.whenLoaded = () => {
             veloInp.value = note.velo;
             let onInput = () => {
                 wasChanged = true;
+                toneInp.value = Math.max(Math.min(toneInp.value, 127), 0);
+                timeInp.value = Math.max(timeInp.value, 0);
+                duraInp.value = Math.max(duraInp.value, 1);
+                veloInp.value = Math.max(Math.min(veloInp.value, 127), 1);
                 note.tone = +toneInp.value;
                 note.time = +timeInp.value;
                 note.dura = +duraInp.value;
@@ -319,7 +323,7 @@ klesun.whenLoaded = () => {
         };
         let updateMousePos = function(x,y) {
             let ticks = Math.round(toTicks(x - POINTER_OFFSET));
-            let semitone = 127 - Math.round(y / rows[0].offsetHeight);
+            let semitone = 129 - Math.round(y / rows[0].offsetHeight);
             $$('.mouse-ticks-holder', noteInfoPanel)[0].innerHTML = ticks;
             $$('.mouse-semitone-holder', noteInfoPanel)[0].innerHTML = semitone;
         };
