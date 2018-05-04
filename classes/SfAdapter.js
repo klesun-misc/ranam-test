@@ -4,8 +4,11 @@
  * by colinbdclark and transforms result to convenient format
  * @param {Uint8Array} $sf2Buf
  */
-define([], () => (sf2Buf, audioCtx, isSf3) => {
+var klesun = Klesun();
+klesun.requires('./Tls.js').then = (Tls) =>
+klesun.whenLoaded = () => (sf2Buf, audioCtx, isSf3) => {
 
+    let {opt} = Tls();
     let range = (l, r) => new Array(r - l).fill(0).map((_, i) => l + i);
 
     // Sf2-Parser lefts null characters when name length is less than 20
@@ -70,6 +73,12 @@ define([], () => (sf2Buf, audioCtx, isSf3) => {
         return wavBuf;
     };
 
+    /** @see http://freepats.zenvoid.org/sf2/sfspec24.pdf grep "38 releaseVolEnv" */
+    let decodeReleaseVolEnv = volEnv => 2 ** (volEnv / 1200);
+
+    /** @param db - soundfont decibel value */
+    let dBtoKoef = (db) => Math.pow(10, db/50); // yes, it is 50, not 10 and not 20 - see /tests/attenToPercents.txt
+
     // overwrites global keys with local if any
     let updateGenerator = function(global, local)
     {
@@ -77,36 +86,43 @@ define([], () => (sf2Buf, audioCtx, isSf3) => {
     };
 
     // adds the tuning semi-tones and cents; multiplies whatever needs to be multiplied
-    let combineGenerators = function(global, local)
+    let combineGenerators = function(presetInstrMods, instrSampleMods)
     {
-        let result = Object.assign({}, local);
+        let result = Object.assign({}, instrSampleMods);
         let dkr = {lo: 0, hi: 127};
 
         result.keyRange = {
             lo: Math.max(
-                (global.keyRange || dkr).lo,
-                (local.keyRange || dkr).lo
+                (presetInstrMods.keyRange || dkr).lo,
+                (instrSampleMods.keyRange || dkr).lo
             ),
             hi: Math.min(
-                (global.keyRange || dkr).hi,
-                (local.keyRange || dkr).hi
+                (presetInstrMods.keyRange || dkr).hi,
+                (instrSampleMods.keyRange || dkr).hi
             ),
         };
 
         result.velRange = {
             lo: Math.max(
-                (global.velRange || dkr).lo,
-                (local.velRange || dkr).lo
+                (presetInstrMods.velRange || dkr).lo,
+                (instrSampleMods.velRange || dkr).lo
             ),
             hi: Math.min(
-                (global.velRange || dkr).hi,
-                (local.velRange || dkr).hi
+                (presetInstrMods.velRange || dkr).hi,
+                (instrSampleMods.velRange || dkr).hi
             ),
         };
 
-        result.fineTune = (+local.fineTune || 0) + (+global.fineTune || 0);
-        result.coarseTune = (+local.coarseTune || 0) + (+global.coarseTune || 0);
-        result.initialAttenuation = (+local.initialAttenuation || 0) + (+global.initialAttenuation || 0);
+        result.fineTune = (+instrSampleMods.fineTune || 0) + (+presetInstrMods.fineTune || 0);
+        result.coarseTune = (+instrSampleMods.coarseTune || 0) + (+presetInstrMods.coarseTune || 0);
+        result.initialAttenuation = (+instrSampleMods.initialAttenuation || 0) + (+presetInstrMods.initialAttenuation || 0);
+
+        // could not hold the pattern above with keeping values in original units
+        // since when you merge preset and instrument, they need to be multiplied
+        let volEnvSeco = opt(instrSampleMods.releaseVolEnv).map(decodeReleaseVolEnv).def(0);
+        let volEnvMult = opt(presetInstrMods.releaseVolEnv).map(decodeReleaseVolEnv).def(1);
+        delete(result.releaseVolEnv);
+        result.releaseVolEnvSeconds = volEnvSeco * volEnvMult;
 
         return result;
     };
@@ -300,13 +316,13 @@ define([], () => (sf2Buf, audioCtx, isSf3) => {
                 generatorApplyToAll: generatorApplyToAll,
             };
         }
-
+        console.log('sf2 tree: ', JSON.parse(JSON.stringify(bankToPresetToData)));
         return flattenSamples(bankToPresetToData);
     };
 
     let bankToPresetToSamples = makeSampleTree();
 
-    console.log('sf2 tree: ', bankToPresetToSamples);
+    console.log('sf2 tree flat samples: ', JSON.parse(JSON.stringify(bankToPresetToSamples)));
 
     let filterSamples = function(params)
     {
@@ -396,9 +412,6 @@ define([], () => (sf2Buf, audioCtx, isSf3) => {
         }
     };
 
-    /** @param db - soundfont decibel value */
-    let dBtoKoef = (db) => Math.pow(10, db/50); // yes, it is 50, not 10 and not 20 - see /tests/attenToPercents.txt
-
     let getSampleData = function(params, then)
     {
         let sampleHeaders = filterSamples(params);
@@ -427,7 +440,7 @@ define([], () => (sf2Buf, audioCtx, isSf3) => {
                     loopEnd: (sam.endLoop + (gen.endloopAddrsOffset || 0)) / sam.sampleRate,
                     stereoPan: sam.sampleType,
                     volumeKoef: genVolumeKoef * params.velocity / 127,
-                    fadeMillis: 100, // TODO: ...
+                    fadeMillis: gen.releaseVolEnvSeconds * 1000,
                 });
                 reportAnother();
             });
@@ -438,4 +451,4 @@ define([], () => (sf2Buf, audioCtx, isSf3) => {
         getSampleData: getSampleData,
         onIdle: onIdle,
     };
-});
+};

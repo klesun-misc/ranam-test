@@ -79,17 +79,9 @@ define([], () => (audioCtx, sf2Adapter, getFluidSf) => {
     };
 
     let release = function(audio) {
-        let iterations = 10;
-        let baseVolume = audio.gainNode.gain.value;
-        let fade = (i) => {
-            if (i >= 0) {
-                audio.gainNode.gain.value = Math.max(baseVolume * (i / iterations), 0.0001);
-                setTimeout(() => fade(i - 1), audio.fadeMillis / iterations);
-            } else {
-                audio.audioSource.stop();
-            }
-        };
-        fade(iterations - 1);
+        let now = audioCtx.currentTime;
+        audio.gainNode.gain.exponentialRampToValueAtTime(0.000001, now + audio.fadeMillis / 1000);
+        audio.audioSource.stop(now + audio.fadeMillis / 1000);
     };
 
     let handleMidiEvent = function(event, preloadOnly = false) {
