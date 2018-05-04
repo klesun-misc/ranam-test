@@ -237,6 +237,107 @@ klesun.whenLoaded = () => {
             scroll.scrollLeft = 0;
         };
 
+        let decodeMidiEventType = function(typeNum, byte1) {
+            if (typeNum == 11) {
+                return {
+                    7: 'channel volume',
+                    0: 'bank a',
+                    32: 'bank b',
+                    100: 'multi-message a',
+                    101: 'multi-message b',
+                }[byte1] || 'ctrl'
+            } else {
+                return {
+                    8: 'note off',
+                    9: 'note on',
+                    12: 'poly key pressure',
+                    14: 'pitch bend',
+                }[typeNum] || typeNum;
+            }
+        };
+
+        let decodeMetaType = function(metaType, metaData) {
+            if (metaType > 0 && metaType <= 7) {
+                // text
+                let name = {
+                    1: 'text',
+                    2: 'copyright',
+                    3: 'track name',
+                    4: 'instrument',
+                    5: 'lyrics',
+                    6: 'marker',
+                    7: 'cue point',
+                }[metaType] || metaType;
+                return '(' + name + ' - ' + metaData.map(b => String.fromCharCode(b)).join('') + ')';
+            } else {
+                let name = {
+                    81: 'tempo',
+                    88: 'time signature',
+                }[metaType] || metaType;
+                return '(' + name + ' - ' + JSON.stringify(metaData) + ')';
+            }
+        };
+
+        let describeEvents = function(events) {
+            let description = '';
+            events.sort((...pair) => {
+                let types = ['meta', 'MIDI', 'sysex'];
+                let [trackA, trackB] = pair.map(r => r.track);
+                let [typeOrderA, typeOrderB] = pair.map(r => r.event.type).map(t => types.indexOf(t));
+                let sign = 0;
+                if (typeOrderA != typeOrderB) {
+                    sign = typeOrderA - typeOrderB;
+                } else {
+                    let type = types[typeOrderA];
+                    if (type === 'meta') {
+                        let [metaA, metaB] = pair.map(r => r.event.metaType);
+                        sign = metaA - metaB;
+                    } else if (type === 'MIDI') {
+                        let [typeA, typeB] = pair.map(r => r.event.midiEventType);
+                        sign = typeA - typeB;
+                        if (sign == 0 && typeA == 11) { // control change
+                            let [ctrlA, ctrlB] = pair.map(r => r.event.parameter1);
+                            sign = ctrlA - ctrlB;
+                        }
+                    }
+                }
+                return sign || trackA - trackB;
+            });
+            for (let event of events) {
+                let pad = str => ('   ' + str).slice(-3);
+                if (event.event.type === 'MIDI') {
+                    description += 'tick: ' + event.time + ' track: ' + pad(event.track) + ' midi chan: ' + pad(event.event.midiChannel) + ' ' +
+                        pad(event.event.midiEventType) + ' ' + pad(event.event.parameter1) + ' ' + pad(event.event.parameter2 || '') +
+                        ' (' + decodeMidiEventType(event.event.midiEventType, event.event.parameter1) + ')' + '\n';
+                } else if (event.event.type === 'meta') {
+                    description += 'tick: ' + event.time + ' track: ' + pad(event.track) + ' meta: ' + decodeMetaType(event.event.metaType, event.event.metaData) + '\n';
+                } else {
+                    description += JSON.stringify(event) + '\n';
+                }
+            }
+            return description;
+        };
+
+        let putOtherEvents = function() {
+            // group them by whole not, since there may be tons of them in a pitch bend for example
+            $$('.other-events', sliderHolder).forEach(m => m.remove());
+            let wholeToEvents = [];
+            for (let event of otherEvents) {
+                let wholes = Math.floor(event.time / smf.ticksPerBeat);
+                wholeToEvents[wholes] = wholeToEvents[wholes] || [];
+                wholeToEvents[wholes].push(event);
+            }
+            for (let [wholes, events] of Object.entries(wholeToEvents)) {
+                let ticks = wholes * smf.ticksPerBeat;
+                sliderHolder.appendChild(mkDom('div', {
+                    classList: ['some-marker', 'other-events'],
+                    title: describeEvents(events),
+                    style: {left: toPixels(ticks) + POINTER_OFFSET},
+                    children: [mkDom('div')],
+                }));
+            }
+        };
+
         let setPointerAt = function(endTicks, duration) {
             stopScrolling();
             let scroll = $$('.scroll', container)[0];
@@ -321,6 +422,7 @@ klesun.whenLoaded = () => {
         container.classList.add('initialized');
         sliderRoot.style.left = POINTER_OFFSET;
         putNotes();
+        putOtherEvents();
         noteList.onmouseout = (e) => {
             $$('.mouse-ticks-holder', noteInfoPanel)[0].innerHTML = '';
             $$('.mouse-semitone-holder', noteInfoPanel)[0].innerHTML = '';
@@ -338,6 +440,7 @@ klesun.whenLoaded = () => {
             updateMousePos(x,y);
         };
         sliderHolder.onmousedown = e => {
+            if (e.button !== 0) return;
             let bounds = sliderHolder.getBoundingClientRect();
             let x = event.clientX - bounds.left;
             let y = event.clientY - bounds.top;

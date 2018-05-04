@@ -274,23 +274,39 @@ table.tracks .holder.event-cnt { text-align: right; }
     top: 0px;
     z-index: 1;
 }
-.moving-time-pointer {
+.slider-holder .some-marker {
     position: absolute;
     width: 2px;
-    left: 100px;
     /* 2px - borders */
     height: calc((var(--rect-height) + 2px) * 127);
-    background-color: green;
     overflow: visible;
 }
-.moving-time-pointer .slider {
+.slider-holder .some-marker div {
     width: 20px;
     height: calc((var(--rect-height) + 2px) * 1.5);
-    background-color: #00e400;
     position: relative;
     left: -9px;
 }
+.moving-time-pointer {
+    left: 100px;
+    background-color: green;
+    z-index: 1;
+}
+.some-marker.other-events:hover {
+    background-color: #a7a70d;
+    width: 1px;
+}
+.some-marker.other-events {
+    background-color: #00000000;
+    width: 1px;
+}
+.some-marker.other-events div {
+    background-color: #a9a900;
+    left: 0;
+    width: 12px;
+}
 .moving-time-pointer .slider {
+    background-color: #00e400;
     cursor: hand;
 }
 /*.moving-time-pointer .slider:dra {*/
