@@ -14,7 +14,7 @@
         let $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
 
         let {http, opt, promise, deepCopy} = Tls();
-        let {isNoteOn, scaleVelocity, fixLogicProNoteOffOrder, changeTempo} = MidiUtil();
+        let {isNoteOn, scaleVelocity, fixLogicProNoteOffOrder, changeTempo, getTicksNow} = MidiUtil();
         let gui = Gui(form);
 
         let audioCtx = new AudioContext();
@@ -103,6 +103,14 @@
                 let startAt = getStartAt();
                 let playback = PlaySmf(smf, synth, () => gui.collectParams(gui), startAt);
                 playback.then = playbackFinished;
+                playback.onStep = (stepData) => {
+                    if (stepData.tempoConfigChanged && animate) {
+                        let ticksToTempo = gui.collectParams().ticksToTempo;
+                        let currentTicks = getTicksNow(stepData.chordAbsTime, stepData.chordTicks, ticksToTempo, smf.ticksPerBeat);
+                        stopAnimation = opt(noteDisplay).map(disp => disp.animatePointer(
+                            currentTicks, ticksToTempo, smf.ticksPerBeat)).def(() => {});
+                    }
+                };
                 gui.switchWithStopBtn(btn).then = () => stopPlayback();
                 let ticksToTempo = gui.collectParams().ticksToTempo;
                 if (animate) {

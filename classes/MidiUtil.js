@@ -28,6 +28,11 @@ define([], () => () => {
         return 1000 * academic * 60 / (tempo / 4);
     };
 
+    let millisToTicks = function (millis, ticksPerBeat, tempo) {
+        let academic = millis / 1000 / 60 * (tempo / 4);
+        return academic * ticksPerBeat * 4;
+    };
+
     let tempoToBytes = function(tempo) {
         let mpqn = Math.floor(60000000 / tempo); // & 0xFFFFFF;
         let ret=[];
@@ -164,10 +169,37 @@ define([], () => () => {
         return tempoNow;
     };
 
-    let getTicksNow = (startTime, startTicks, ticksToTempo) => {
+    let getTicksNow = (startTime, startTicks, ticksToTempo, ticksPerBeat) => {
+        // first, remove tempo events before start time
+        let entries = Object.entries(ticksToTempo);
+        let startTempo = 120;
+        let skipTo = -1;
+        for (let i = 0; i < entries.length; ++i) {
+            let [ticks, tempo] = entries[i];
+            if (ticks <= startTicks) {
+                startTempo = tempo;
+                skipTo = i;
+            } else {
+                break;
+            }
+        }
+        entries = skipTo > -1 ? entries.slice(skipTo + 1) : entries;
+
         let now = window.performance.now();
-        throw new Error('TODO: implement!');
-        return ticksNow;
+        for (let [ticks, tempo] of entries) {
+            let deltaTicks = ticks - startTicks;
+            let deltaMillis = ticksToMillis(deltaTicks, ticksPerBeat, tempo);
+            let tempoTime = startTime + deltaMillis;
+            if (tempoTime >= now) {
+                break;
+            } else {
+                startTicks = ticks;
+                startTime = tempoTime;
+                startTempo = tempo;
+            }
+        }
+        let tillNow = millisToTicks(now - startTime, ticksPerBeat, startTempo);
+        return startTicks + tillNow;
     };
 
     return {

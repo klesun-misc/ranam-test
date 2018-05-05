@@ -36,6 +36,7 @@ klesun.whenLoaded = () => (smfReader, synth, getParams, startAt) => {
     let stopped = false;
     let chordIndex = -1;
     let whenDones = [];
+    let onSteps = [];
     let startParams = getParams();
     let tempoStartTime = window.performance.now();
     let tempoStartTicks = 0;
@@ -103,12 +104,17 @@ klesun.whenLoaded = () => (smfReader, synth, getParams, startAt) => {
             nowOrLater(timeSkip, () => {
                 handleChord(ticks, chordAbsTime, true);
                 let t = getTempo(ticks, getParams().ticksToTempo);
-                if (t != tempo) {
-                    t = bytesToTempo(tempoTyBytes(t)); // normalize to prevent timing errors
+                let tempoConfigChanged = t != tempo;
+                if (tempoConfigChanged) {
                     tempo = t;
                     tempoStartTime = chordAbsTime;
                     tempoStartTicks = ticks;
                 }
+                onSteps.forEach(cb => cb({
+                    chordAbsTime: chordAbsTime,
+                    chordTicks: ticks,
+                    tempoConfigChanged: tempoConfigChanged,
+                }));
                 playNext();
             });
         } else {
@@ -124,6 +130,9 @@ klesun.whenLoaded = () => (smfReader, synth, getParams, startAt) => {
             } else {
                 whenDones.push(whenDone);
             }
+        },
+        set onStep(callback) {
+            onSteps.push(callback);
         },
         stop: () => stopped = true,
     };

@@ -378,9 +378,6 @@ klesun.whenLoaded = () => {
                 }
             }
             let entries = Object.entries(ticksToTempo);
-            // a fishy way to immediately go to the start position
-            ticksToTempo = Object.assign({[startAt]: 120}, ticksToTempo);
-
             let tempoStartTime = window.performance.now();
             let tempoStartTicks = startAt;
             let doNext = (i) => {
