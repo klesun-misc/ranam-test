@@ -28,6 +28,21 @@ define([], () => () => {
         return 1000 * academic * 60 / (tempo / 4);
     };
 
+    let tempoToBytes = function(tempo) {
+        let mpqn = Math.floor(60000000 / tempo); // & 0xFFFFFF;
+        let ret=[];
+        do {
+            ret.unshift(mpqn & 0xFF);
+            mpqn >>= 8;
+        } while (mpqn);
+        while (ret.length < 3) {
+            ret.push(0);
+        }
+        return ret;
+    };
+
+    let bytesToTempo = bytes => 60 * 1000000 / bytes.reduce((a,b) => (a << 8) + b, 0);
+
     /** take events that happen at current tick */
     let takeTickEvents = function(events, startOffset)
     {
@@ -90,16 +105,7 @@ define([], () => () => {
     let makeTempo = (delta, tempo) => {
         // tempo = 60 * 1000000 / event.metaData.reduce((a,b) => (a << 8) + b, 0);
         // f(bytes) = Math.floor(60 * 1000000 / tempo)
-
-        var mpqn = Math.floor(60000000 / tempo); // & 0xFFFFFF;
-        var ret=[];
-        do {
-            ret.unshift(mpqn & 0xFF);
-            mpqn >>= 8;
-        } while (mpqn);
-        while (ret.length < 3) {
-            ret.push(0);
-        }
+        let ret = tempoToBytes(tempo);
         return {
             delta: delta,
             type: 'meta',
@@ -170,9 +176,12 @@ define([], () => () => {
         isPitchBend: isPitchBend,
         scaleVelocity: scaleVelocity,
         ticksToMillis: ticksToMillis,
-        fixLogicProNoteOffOrder: fixLogicProNoteOffOrder,
-        changeTempo: changeTempo,
+        tempoTyBytes: tempoToBytes,
+        bytesToTempo: bytesToTempo,
         getTempo: getTempo,
         getTicksNow: getTicksNow,
+
+        fixLogicProNoteOffOrder: fixLogicProNoteOffOrder,
+        changeTempo: changeTempo,
     };
 });

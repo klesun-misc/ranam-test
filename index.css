@@ -301,8 +301,7 @@ table.tracks .holder.event-cnt { text-align: right; }
     width: 1px;
 }
 .some-marker.other-events {
-    background-color: #00000000;
-    width: 1px;
+    width: 0px;
 }
 .some-marker.other-events div {
     background-color: #a9a900;

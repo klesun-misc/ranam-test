@@ -5,7 +5,9 @@ klesun.requires('./MidiUtil.js').then = (MidiUtil) =>
 klesun.whenLoaded = () => (smfReader, synth, getParams, startAt) => {
 
     let {opt} = Tls();
-    let {isNoteOn, scaleVelocity, ticksToMillis, getTempo} = MidiUtil();
+    let {isNoteOn, scaleVelocity, ticksToMillis, getTempo,
+        tempoTyBytes, bytesToTempo,
+    } = MidiUtil();
 
     /** do setTimeout() or do on this thread if time is zero */
     let nowOrLater = (millis, callback) => {
@@ -58,15 +60,15 @@ klesun.whenLoaded = () => (smfReader, synth, getParams, startAt) => {
         });
     };
 
-    let handleChord = function(ticks, nextTime, realSound) {
+    let handleChord = function(ticks, chordAbsTime, realSound) {
         for (let event of transformEvents(ticksToEvents[ticks])) {
             if (event.type === 'MIDI') {
                 synth.handleMidiEvent(event, !realSound);
             } else if (event.type === 'meta') {
                 // handle tempo and other stuff
                 if (event.metaType === 81) { // tempo
-                    tempo = 60 * 1000000 / event.metaData.reduce((a,b) => (a << 8) + b, 0);
-                    tempoStartTime = tempoStartTime + nextTime;
+                    tempo = bytesToTempo(event.metaData);
+                    tempoStartTime = chordAbsTime;
                     tempoStartTicks = ticks;
                 }
             }
@@ -95,16 +97,18 @@ klesun.whenLoaded = () => (smfReader, synth, getParams, startAt) => {
             synth.stopAll();
         } else if (++chordIndex < ticksPerChord.length) {
             let ticks = ticksPerChord[chordIndex];
-            let nextTime = ticksToMillis(ticks - tempoStartTicks, smfReader.ticksPerBeat, tempo);
-            let timeSkip = tempoStartTime + nextTime - window.performance.now();
+            let chordRelTime = ticksToMillis(ticks - tempoStartTicks, smfReader.ticksPerBeat, tempo);
+            let chordAbsTime = tempoStartTime + chordRelTime;
+            let timeSkip = chordAbsTime - window.performance.now();
             nowOrLater(timeSkip, () => {
-                handleChord(ticks, nextTime, true);
-                //let t = getTempo(ticks, getParams().ticksToTempo);
-                //if (t != tempo) {
-                //    tempo = t;
-                //    tempoStartTime = tempoStartTime + nextTime;
-                //    tempoStartTicks = ticks;
-                //}
+                handleChord(ticks, chordAbsTime, true);
+                let t = getTempo(ticks, getParams().ticksToTempo);
+                if (t != tempo) {
+                    t = bytesToTempo(tempoTyBytes(t)); // normalize to prevent timing errors
+                    tempo = t;
+                    tempoStartTime = chordAbsTime;
+                    tempoStartTicks = ticks;
+                }
                 playNext();
             });
         } else {
