@@ -13,8 +13,6 @@ klesun.whenLoaded = () => {
     let $$ = (s, root) => [...(root || document).querySelectorAll(s)];
 
     let onNoteClick = (note) => {};
-    let onNoteOver = (note) => {};
-    let onNoteOut = (note) => {};
     let stopScrolling = () => {};
     let stopTempoScheduling = () => {};
     let moveSelectedNote = (x, y) => {};
@@ -176,7 +174,7 @@ klesun.whenLoaded = () => {
             return quarters * smf.ticksPerBeat / 4;
         };
 
-        let setCurrentNote = (dom, note, relXy) => {
+        let setCurrentNote = (dom, note) => {
             note = deepCopy(note);
             $$('.selected-note', container).forEach(dom => dom.classList.remove('selected-note'));
             dom.classList.add('selected-note');
@@ -206,22 +204,26 @@ klesun.whenLoaded = () => {
                 note.velo = +veloInp.value;
                 dom.remove();
                 let rect = addNoteRect(note);
-                setCurrentNote(rect, note, relXy);
-            };
-
-            let {x: relX, y: relY} = relXy;
-            moveSelectedNote = (newX, newY) => {
-                let ticks = Math.round(toTicks(newX - relX - POINTER_OFFSET));
-                let semitone = 129 - Math.round(newY / rows[0].offsetHeight);
-                timeInp.value = roundTickToSixteenth(ticks);
-                toneInp.value = semitone;
-                onInput();
+                return setCurrentNote(rect, note);
             };
 
             toneInp.oninput = onInput;
             timeInp.oninput = onInput;
             duraInp.oninput = onInput;
             veloInp.oninput = onInput;
+
+            return {
+                onInput: onInput,
+                set time(value) {
+                    timeInp.value = value;
+                },
+                set tone(value) {
+                    toneInp.value = value;
+                },
+                set dura(value) {
+                    duraInp.value = value;
+                },
+            };
         };
 
         let addNoteRect = (note) => {
@@ -237,18 +239,38 @@ klesun.whenLoaded = () => {
                     position: 'absolute',
                     top: 0,
                     left: toPixels(time) + POINTER_OFFSET,
-                    width: Math.max(toPixels(dura), 4),
+                    width: Math.max(toPixels(dura), 8),
                     height: '100%',
                     margin: '0',
                 },
                 onmousedown: e => {
                     // for some reason it starts dragging sometimes
                     e.preventDefault();
-                    setCurrentNote(rect, note, getRelXy(e, rect));
+                    let current = setCurrentNote(rect, note);
+                    let {x: relX, y: relY} = getRelXy(e, rect);
+                    moveSelectedNote = (newX, newY) => {
+                        let ticks = Math.round(toTicks(newX - relX - POINTER_OFFSET));
+                        let semitone = 129 - Math.round(newY / rows[0].offsetHeight);
+                        current.time = roundTickToSixteenth(ticks);
+                        current.tone = semitone;
+                        current = current.onInput();
+                    };
                     onNoteClick(note);
                 },
-                onmouseover: () => onNoteOver(note),
-                onmouseout: () => onNoteOut(note),
+                children: [mkDom('div', {
+                    classList: ['resize-corner'],
+                    onmousedown: (e) => {
+                        e.stopPropagation();
+                        let current = setCurrentNote(rect, note);
+                        let {x: relX, y: relY} = getRelXy(e, rect);
+                        let {x: absX, y: absY} = getRelXy(e, noteList);
+                        moveSelectedNote = (newX, newY) => {
+                            let dura = Math.max(1, Math.round(toTicks(newX - absX + relX)));
+                            current.dura = roundTickToSixteenth(dura);
+                            current = current.onInput();
+                        };
+                    },
+                })],
             });
             row.appendChild(rect);
             return rect;
@@ -508,8 +530,6 @@ klesun.whenLoaded = () => {
 
         return {
             set onNoteClick(cb) { onNoteClick = cb; },
-            set onNoteOver(cb) { onNoteOver = cb; },
-            set onNoteOut(cb) { onNoteOut = cb; },
             animatePointer: animatePointer,
             getEditorSmf: () => wasChanged ? getEditorSmf() : smf,
             getCursorTicks: () => toTicks(sliderRoot.offsetLeft - POINTER_OFFSET),
