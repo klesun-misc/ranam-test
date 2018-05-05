@@ -17,6 +17,7 @@ klesun.whenLoaded = () => {
     let onNoteOut = (note) => {};
     let stopScrolling = () => {};
     let stopTempoScheduling = () => {};
+    let moveSelectedNote = (x, y) => {};
 
     let nowOrLater = (millis) => promise(done => millis > 0
         ? setTimeout(() => done(123), millis)
@@ -123,6 +124,13 @@ klesun.whenLoaded = () => {
         let sliderRoot = $$('.moving-time-pointer', container)[0];
         let sliderHolder = $$('.slider-holder', container)[0];
 
+        let getRelXy = (event, dom) => {
+            let bounds = dom.getBoundingClientRect();
+            let x = event.clientX - bounds.left;
+            let y = event.clientY - bounds.top;
+            return {x, y};
+        };
+
         let getEditorSmf = () => {
             // like normal events, but with absolute
             // time - will be replaced with delta later
@@ -157,7 +165,18 @@ klesun.whenLoaded = () => {
             return editorSmf;
         };
 
-        let setCurrentNote = (dom, note) => {
+        /** return closest pixel to precise multiple of 1/16 note */
+        let roundPixelToSixteenth = function(pixels) {
+            let quarters = Math.round(pixels / QUARTER_WIDTH * 8);
+            return quarters * QUARTER_WIDTH / 8;
+        };
+
+        let roundTickToSixteenth = function(ticks) {
+            let quarters = Math.round(ticks / smf.ticksPerBeat * 4);
+            return quarters * smf.ticksPerBeat / 4;
+        };
+
+        let setCurrentNote = (dom, note, relXy) => {
             note = deepCopy(note);
             $$('.selected-note', container).forEach(dom => dom.classList.remove('selected-note'));
             dom.classList.add('selected-note');
@@ -187,8 +206,18 @@ klesun.whenLoaded = () => {
                 note.velo = +veloInp.value;
                 dom.remove();
                 let rect = addNoteRect(note);
-                setCurrentNote(rect, note);
+                setCurrentNote(rect, note, relXy);
             };
+
+            let {x: relX, y: relY} = relXy;
+            moveSelectedNote = (newX, newY) => {
+                let ticks = Math.round(toTicks(newX - relX - POINTER_OFFSET));
+                let semitone = 129 - Math.round(newY / rows[0].offsetHeight);
+                timeInp.value = roundTickToSixteenth(ticks);
+                toneInp.value = semitone;
+                onInput();
+            };
+
             toneInp.oninput = onInput;
             timeInp.oninput = onInput;
             duraInp.oninput = onInput;
@@ -212,8 +241,10 @@ klesun.whenLoaded = () => {
                     height: '100%',
                     margin: '0',
                 },
-                onclick: () => {
-                    setCurrentNote(rect, note);
+                onmousedown: e => {
+                    // for some reason it starts dragging sometimes
+                    e.preventDefault();
+                    setCurrentNote(rect, note, getRelXy(e, rect));
                     onNoteClick(note);
                 },
                 onmouseover: () => onNoteOver(note),
@@ -323,12 +354,12 @@ klesun.whenLoaded = () => {
             $$('.other-events', sliderHolder).forEach(m => m.remove());
             let wholeToEvents = [];
             for (let event of otherEvents) {
-                let wholes = Math.floor(event.time / smf.ticksPerBeat);
+                let wholes = Math.floor(event.time / smf.ticksPerBeat * 2);
                 wholeToEvents[wholes] = wholeToEvents[wholes] || [];
                 wholeToEvents[wholes].push(event);
             }
             for (let [wholes, events] of Object.entries(wholeToEvents)) {
-                let ticks = wholes * smf.ticksPerBeat;
+                let ticks = wholes * smf.ticksPerBeat / 2;
                 sliderHolder.appendChild(mkDom('div', {
                     classList: ['some-marker', 'other-events'],
                     title: describeEvents(events),
@@ -410,11 +441,6 @@ klesun.whenLoaded = () => {
             };
             return stopTempoScheduling;
         };
-        /** return closest pixel to precise multiple of 1/16 note */
-        let roundToSixteenth = function(pixels) {
-            let quarters = Math.round(pixels / QUARTER_WIDTH * 8);
-            return quarters * QUARTER_WIDTH / 8;
-        };
 
         container.classList.add('initialized');
         sliderRoot.style.left = POINTER_OFFSET;
@@ -427,21 +453,18 @@ klesun.whenLoaded = () => {
         let updateMousePos = function(x,y) {
             let ticks = Math.round(toTicks(x - POINTER_OFFSET));
             let semitone = 129 - Math.round(y / rows[0].offsetHeight);
+            moveSelectedNote(x, y);
             $$('.mouse-ticks-holder', noteInfoPanel)[0].innerHTML = ticks;
             $$('.mouse-semitone-holder', noteInfoPanel)[0].innerHTML = semitone;
         };
         scrollableContent.onmousemove = (e) => {
-            let bounds = scrollableContent.getBoundingClientRect();
-            let x = event.clientX - bounds.left;
-            let y = event.clientY - bounds.top;
+            let {x, y} = getRelXy(e, scrollableContent);
             updateMousePos(x,y);
         };
         sliderHolder.onmousedown = e => {
             if (e.button !== 0) return;
-            let bounds = sliderHolder.getBoundingClientRect();
-            let x = event.clientX - bounds.left;
-            let y = event.clientY - bounds.top;
-            sliderRoot.style.left = Math.max(roundToSixteenth(x), POINTER_OFFSET);
+            let {x, y} = getRelXy(e, sliderHolder);
+            sliderRoot.style.left = Math.max(roundPixelToSixteenth(x), POINTER_OFFSET);
         };
         sliderRoot.ondrag = (e) => {
             // to not who image copy by the cursor
@@ -449,15 +472,12 @@ klesun.whenLoaded = () => {
 
             // so that dragging did not cause it to scroll
             scroll.style['overflow-y'] = 'hidden';
-
-            let bounds = scrollableContent.getBoundingClientRect();
-            let x = event.clientX - bounds.left;
-            let y = event.clientY - bounds.top;
+            let {x, y} = getRelXy(e, scrollableContent);
             updateMousePos(x,y);
 
             /** seems like a bug, https://stackoverflow.com/q/12128216/2750743 */
             if (event.screenX !== 0) {
-                sliderRoot.style.left = Math.max(roundToSixteenth(x), POINTER_OFFSET);
+                sliderRoot.style.left = Math.max(roundPixelToSixteenth(x), POINTER_OFFSET);
             }
         };
         sliderRoot.ondragend = (e) => {
@@ -478,6 +498,12 @@ klesun.whenLoaded = () => {
         sliderHolder.ondragover = e => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
+        };
+        noteList.onmouseleave = function(e) {
+            moveSelectedNote = (x, y) => {}; // release note
+        };
+        noteList.onmouseup = function() {
+            moveSelectedNote = (x, y) => {}; // release note
         };
 
         return {
