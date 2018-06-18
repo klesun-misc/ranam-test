@@ -79,20 +79,26 @@ klesun.whenLoaded = () => (smfReader, synth, getParams, startAt) => {
     // rewind to the start point, apply all program/bank/tempo/etc... events
     let rewindToStart = function(ticksPerChord) {
         let startIdx = 0;
+        let ticksTilNext = 0;
         for (let ticks of ticksPerChord) {
             if (ticks >= startAt) {
+                ticksTilNext = ticks - startAt;
                 break;
             } else {
                 ++startIdx;
                 handleChord(ticks, 0, false);
             }
         }
-        return ticksPerChord.slice(startIdx)
+        return {
+            ticksTilNext: ticksTilNext,
+            ticksPerChord: ticksPerChord.slice(startIdx),
+        };
     };
 
-    ticksPerChord = rewindToStart(ticksPerChord);
+    let rewound = rewindToStart(ticksPerChord);
+    ticksPerChord = rewound.ticksPerChord;
     tempoStartTicks = ticksPerChord[0] || 0;
-    tempoStartTime = window.performance.now();
+    tempoStartTime = window.performance.now() + ticksToMillis(rewound.ticksTilNext, smfReader.ticksPerBeat, tempo);
     let playNext = () => {
         if (stopped) {
             synth.stopAll();
